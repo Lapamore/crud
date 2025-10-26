@@ -11,5 +11,5 @@ bcrypt==3.2.2
 pyjwt
 python-dotenv==1.0.1
 pydantic[email]
-slugify
+python-slugify==8.0.1
 python-multipart
