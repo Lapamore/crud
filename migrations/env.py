@@ -44,7 +44,7 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     # Use the DATABASE_URL from our Pydantic settings
-    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+    # config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
