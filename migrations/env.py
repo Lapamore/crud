@@ -8,7 +8,7 @@ from sqlalchemy import pool
 from alembic import context
 
 # Add the project root to the Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.models import Base
 from src.config import settings
@@ -43,7 +43,9 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
+    # Use the DATABASE_URL from our Pydantic settings
     config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
