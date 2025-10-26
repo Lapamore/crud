@@ -23,7 +23,7 @@ curl -X 'POST' \
   -d 'username=testuser1&password=password123'
 
 
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjEiLCJleHAiOjE3NjE0OTI5MTN9.oP5dDV9qfpCE1549X972Zsz19r0LdB_S5tB962z1ed0
+
 
 
 curl -X 'POST' \
@@ -70,3 +70,8 @@ curl -X 'POST' \
   "description": "A test article.",
   "body": "This article exists to be commented on."
 }'
+
+curl -X 'GET' \
+  'http://localhost:8001/api/user' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjQiLCJleHAiOjE3NjE0OTY2NjF9.shQKNMdMyn-z-W5b5Qi48vYRFuKFhJpl3W7y9CCWbQY'

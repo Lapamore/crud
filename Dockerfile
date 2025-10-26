@@ -19,3 +19,6 @@ COPY ./src /app/src
 
 # 6. Expose Port
 EXPOSE 8000
+
+# 7. Run Application
+CMD ["/usr/local/bin/uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "10000"]
