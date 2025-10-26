@@ -6,9 +6,11 @@ from .. import models, schemas
 def create_article(db: Session, article: schemas.ArticleCreate, author_id: int):
     slug = slugify(article.title)
     db_article = models.Article(
-        **article.model_dump(),
+        title=article.title,
+        description=article.description,
+        body=article.body,
         slug=slug,
-        author_id=author_id
+        author_id=author_id,
     )
     db.add(db_article)
     db.commit()
