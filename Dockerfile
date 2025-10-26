@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 5. Copy Application Code and Alembic config
 COPY alembic.ini .
 COPY migrations /app/migrations
+RUN mkdir -p /app/migrations/versions
 COPY ./src /app/src
 
 # 6. Expose Port
