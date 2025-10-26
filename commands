@@ -1,0 +1,72 @@
+docker system prune -a --volumes
+docker-compose up --build -d app
+
+
+docker-compose exec app alembic revision --autogenerate -m "Initial migration"
+docker-compose exec app alembic upgrade head
+
+curl -X 'POST' \
+    'http://localhost:8001/api/users' \
+    -H 'accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d '{
+    "email": "user1@example.com",
+    "username": "testuser1",
+    "password": "password123"
+}'
+
+
+curl -X 'POST' \
+  'http://localhost:8001/api/users/login' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'username=testuser1&password=password123'
+
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjEiLCJleHAiOjE3NjE0OTI5MTN9.oP5dDV9qfpCE1549X972Zsz19r0LdB_S5tB962z1ed0
+
+
+curl -X 'POST' \
+  'http://localhost:8001/api/articles' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <ВАШ_ТОКЕН>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "title": "My First Article",
+  "description": "This is a test article.",
+  "body": "The content of the article goes here."
+}'
+
+curl -X 'PUT' \
+  'http://localhost:8001/api/articles/my-second-article' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjEiLCJleHAiOjE3NjE0OTI5MTN9.oP5dDV9qfpCE1549X972Zsz19r0LdB_S5tB962z1ed0' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "title": "My Updated Article Title",
+  "description": "The description has been updated.",
+  "body": "The body has been updated as well."
+}'
+
+curl -X 'DELETE' \
+  'http://localhost:8001/api/articles/my-updated-article-title' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjEiLCJleHAiOjE3NjE0OTI5MTN9.oP5dDV9qfpCE1549X972Zsz19r0LdB_S5tB962z1ed0'
+
+  curl -X 'DELETE' \
+  'http://localhost:8001/api/articles/' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <ВАШ_ТОКЕН>'
+
+
+
+curl -X 'POST' \
+  'http://localhost:8001/api/articles' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjEiLCJleHAiOjE3NjE0OTI5MTN9.oP5dDV9qfpCE1549X972Zsz19r0LdB_S5tB962z1ed0' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "title": "Article for Comments",
+  "description": "A test article.",
+  "body": "This article exists to be commented on."
+}'
