@@ -8,5 +8,6 @@ pydantic
 pydantic-settings
 passlib[bcrypt]
 pyjwt
-python-dotenv==1.0.1
+python-dotenv
 pydantic[email]
+slugify
