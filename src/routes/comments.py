@@ -41,7 +41,6 @@ def delete_comment(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    # Check if article exists
     db_article = article_service.get_article_by_slug(db, slug=slug)
     if db_article is None:
         raise HTTPException(status_code=404, detail="Article not found")
