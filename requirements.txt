@@ -6,9 +6,10 @@ alembic
 python-jose[cryptography]
 pydantic
 pydantic-settings
-passlib[bcrypt]
+passlib
+bcrypt==3.2.2
 pyjwt
-python-dotenv
+python-dotenv==1.0.1
 pydantic[email]
 slugify
 python-multipart
