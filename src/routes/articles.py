@@ -16,10 +16,6 @@ def create_article(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    arcticles = article_service.get_article_by_title(db=db, title=article.title)
-    if len(arcticles) > 0:
-        raise HTTPException(status_code=409, detail="A article with this title already exists")
-        
     return article_service.create_article(db=db, article=article, author_id=current_user.id)
     
 @router.get("/articles", response_model=List[schemas.Article])
