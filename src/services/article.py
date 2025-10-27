@@ -12,6 +12,8 @@ def create_article(db: Session, article: schemas.ArticleCreate, author_id: int):
         slug=slug,
         author_id=author_id,
     )
+
+    
     db.add(db_article)
     db.commit()
     db.refresh(db_article)
@@ -21,10 +23,11 @@ def create_article(db: Session, article: schemas.ArticleCreate, author_id: int):
 def get_articles(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Article).offset(skip).limit(limit).all()
 
+def get_article_by_title(db: Session, title: str):
+    return db.query(models.Article).filter(models.Article.title == title)
 
 def get_article_by_slug(db: Session, slug: str):
     return db.query(models.Article).filter(models.Article.slug == slug).first()
-
 
 def update_article(db: Session, db_article: models.Article, article_in: schemas.ArticleUpdate):
     update_data = article_in.model_dump(exclude_unset=True)
