@@ -16,13 +16,15 @@ def create_article(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    arcticles = article_service.get_article_by_title(db=db, title=article.title)
+    if len(arcticles) > 0:
+        raise HTTPException(status_code=409, detail="A article with this title already exists")
+        
     return article_service.create_article(db=db, article=article, author_id=current_user.id)
-
-
+    
 @router.get("/articles", response_model=List[schemas.Article])
 def list_articles(db: Session = Depends(get_db), skip: int = 0, limit: int = 100):
     return article_service.get_articles(db, skip=skip, limit=limit)
-
 
 @router.get("/articles/{slug}", response_model=schemas.Article)
 def get_article(slug: str, db: Session = Depends(get_db)):
