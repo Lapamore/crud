@@ -5,6 +5,9 @@ from .. import models, schemas
 
 def create_article(db: Session, article: schemas.ArticleCreate, author_id: int):
     slug = slugify(article.title)
+    if get_article_by_slug(db, slug=slug):
+        raise HTTPException(status_code=409, detail="Slug already exists")
+
     db_article = models.Article(
         title=article.title,
         description=article.description,
@@ -12,8 +15,6 @@ def create_article(db: Session, article: schemas.ArticleCreate, author_id: int):
         slug=slug,
         author_id=author_id,
     )
-
-    
     db.add(db_article)
     db.commit()
     db.refresh(db_article)
@@ -22,9 +23,6 @@ def create_article(db: Session, article: schemas.ArticleCreate, author_id: int):
 
 def get_articles(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Article).offset(skip).limit(limit).all()
-
-def get_article_by_title(db: Session, title: str):
-    return db.query(models.Article).filter(models.Article.title == title)
 
 def get_article_by_slug(db: Session, slug: str):
     return db.query(models.Article).filter(models.Article.slug == slug).first()
