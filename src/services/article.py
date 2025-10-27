@@ -1,7 +1,8 @@
 from slugify import slugify
+from fastapi import HTTPException  
+
 from sqlalchemy.orm import Session
 from .. import models, schemas
-
 
 def create_article(db: Session, article: schemas.ArticleCreate, author_id: int):
     slug = slugify(article.title)
