@@ -75,3 +75,239 @@ curl -X 'GET' \
   'http://localhost:8001/api/user' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjQiLCJleHAiOjE3NjE0OTY2NjF9.shQKNMdMyn-z-W5b5Qi48vYRFuKFhJpl3W7y9CCWbQY'
+
+
+import json
+import logging
+from typing import Any, Dict, List
+
+from coredis import KeyDB as KeyDbClient
+from mbi.copilot.backend.src.components.agent_service.core.IAgentService import IAgentService
+from mbi.copilot.backend.src.infrastructure.datagate.repositories.impl.DataGateRepository import DataGateRepository
+from mbi.copilot.backend.src.web.models.agent_models import *
+from mbi.copilot.backend.src.components.tools.impl.CallSupportTool import DialogState
+from mbi.datagate.client import DataGateClientPart
+from mbi.datagate.iface import DataQueryRequest
+from mbi.datagate.conf import Enum__DataWorkerActions
+
+logger = logging.getLogger(__name__)
+
+class AgentService(IAgentService):
+    def __init__(self, kc: KeyDbClient, dg_client: DataGateClientPart):
+        self.kc = kc
+        self.dg_client = dg_client
+        self.dg_repo = DataGateRepository(dg_client=dg_client)
+
+    async def get_statistics(self) -> StatisticsResponse:
+        stats_payload = {"method": "get_statistics"}
+        req = DataQueryRequest(
+            action=Enum__DataWorkerActions.copilot_db_request,
+            data_source_code="ch01",
+            payload=stats_payload
+        )
+        response = await self.dg_client._send_request(req.to_dic(), 1)
+        if response and response.get("res"):
+            return StatisticsResponse.model_validate(response["res"])
+        raise Exception("Could not retrieve statistics from Data Gate.")
+
+    async def get_awaiting_dialogs(self) -> List[DialogModel]:
+        dialog_payloads_str = await self.kc.lrange("dialogs:awaiting_agent_queue", 0, -1)
+        dialogs = []
+        for payload_str in dialog_payloads_str:
+            try:
+                # ++ НАЧАЛО ИЗМЕНЕНИЙ ++
+                # Добавлена обработка ошибок на случай невалидных данных в очереди
+                payload = json.loads(payload_str)
+                if 'dialog_id' in payload and 'user_id' in payload:
+                    dialogs.append(DialogModel(id=payload['dialog_id'], userId=payload['user_id']))
+                else:
+                    logger.warning(f"Invalid payload structure in awaiting_dialogs queue: {payload_str}")
+                # -- КОНЕЦ ИЗМЕНЕНИЙ --
+            except (json.JSONDecodeError, TypeError):
+                logger.error(f"Failed to parse JSON from awaiting_dialogs queue: '{payload_str}'")
+        return dialogs
+
+    async def claim_dialog(self, dialog_id: str, agent_id: str, user_id: str) -> ClaimDialogResponse:
+        # ## ++ НАЧАЛО ИЗМЕНЕНИЙ: Полностью переработанный метод ++
+        # 1. Пытаемся удалить диалог из очереди
+        queue_payload = json.dumps({"dialog_id": dialog_id, "user_id": user_id})
+        removed_count = await self.kc.lrem("dialogs:awaiting_agent_queue", 1, queue_payload)
+        
+        # Если не удалось удалить, значит кто-то другой уже забрал диалог
+        if removed_count == 0:
+            raise Exception("Dialog already claimed or not found")
+
+        # 2. Атомарно обновляем состояние диалога в KeyDB
+        async with await self.kc.pipeline(transaction=True) as pipe:
+            await pipe.set(f"dialog:{dialog_id}:agent_id", agent_id)
+            await pipe.set(f"dialog:{dialog_id}:state", DialogState.AGENT_HANDLED.value)
+            await pipe.set(f"dialog:{dialog_id}:user_id", user_id)
+            await pipe.execute()
+        
+        # 3. Отправляем лог об изменении статуса (fire-and-forget)
+        log_payload = {"method": "log_state_change", "params": {"dialog_id": dialog_id, "user_id": user_id, "state": DialogState.AGENT_HANDLED.value, "changed_by": agent_id}}
+        await self.dg_client.send_fire_and_forget(DataQueryRequest(action=Enum__DataWorkerActions.copilot_db_request, data_source_code="ch01", payload=log_payload))
+
+        # 4. Загружаем историю и анализ прямо здесь, чтобы избежать лишних запросов
+        logger.info(f"Загрузка истории и анализа для диалога {dialog_id}")
+        
+        # Загружаем историю
+        history_res = await self.dg_repo.get_dialog_history(user_id=user_id, session_id=dialog_id)
+        formatted_history = [
+            MessageModel(id=f"hist-{dialog_id}-{i}", role=msg.get("role"), content=msg.get("content"))
+            for i, msg in enumerate(history_res) if msg.get("role") != "system"
+        ]
+
+        # Загружаем анализ
+        analysis_text = await self.kc.get(f"dialog:{dialog_id}:analysis")
+
+        # 5. Возвращаем полный объект с историей и анализом
+        return ClaimDialogResponse(
+            history=formatted_history, 
+            analysis=analysis_text, 
+            dialog=DialogModel(id=dialog_id, userId=user_id)
+        )
+        # ## -- КОНЕЦ ИЗМЕНЕНИЙ --
+
+    async def get_dialog_details(self, dialog_id: str, agent_id: str) -> DialogDetailsResponse:
+        owner_agent_id = await self.kc.get(f"dialog:{dialog_id}:agent_id")
+        if owner_agent_id != agent_id:
+            raise Exception("Agent does not own this dialog")
+
+        user_id = await self.kc.get(f"dialog:{dialog_id}:user_id")
+        if not user_id:
+            raise Exception("User ID for dialog not found")
+        
+        history_res = await self.dg_repo.get_dialog_history(user_id=user_id, session_id=dialog_id)
+        
+        formatted_history = [
+            MessageModel(id=f"hist-{dialog_id}-{i}", role=msg.get("role"), content=msg.get("content"))
+            for i, msg in enumerate(history_res) if msg.get("role") != "system"
+        ]
+        analysis_text = await self.kc.get(f"dialog:{dialog_id}:analysis")
+
+        return DialogDetailsResponse(
+            dialog=DialogModel(id=dialog_id, userId=user_id),
+            messages=formatted_history,
+            analysis=analysis_text
+        )
+
+    async def send_message(self, dialog_id: str, agent_id: str, user_id: str, text: str) -> StatusResponse:
+        state = await self.kc.get(f"dialog:{dialog_id}:state")
+        if state == DialogState.CLOSED.value:
+            raise Exception("Cannot send message to a closed dialog")
+
+        last_id = await self.dg_repo.get_last_message_id(user_id=user_id, session_id=dialog_id)
+        new_message_id = (last_id or 0) + 1
+
+        await self.dg_repo.insert(user_id=user_id, session_id=dialog_id, message_id=new_message_id, role="agent", text=text)
+
+        message_payload = json.dumps({"status": "ok", "role": "agent", "text": text})
+        await self.kc.rpush(f"dialog:{dialog_id}:user_queue", [message_payload])
+        
+        return StatusResponse(status="sent")
+    
+    async def get_messages(self, dialog_id: str) -> GetMessagesResponse:
+        agent_queue = f"dialog:{dialog_id}:agent_queue"
+        logger.debug(f"Ожидание сообщения в очереди: {agent_queue}")
+
+        message = await self.kc.blpop([agent_queue], timeout=30)
+        
+        if message:
+            try:
+                message_data = json.loads(message[1])
+                if message_data.get('role') == 'user':
+                    return GetMessagesResponse(message=PolledMessage(**message_data))
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.error(f"Ошибка парсинга сообщения из очереди {agent_queue}: {e}")
+        
+        return GetMessagesResponse(message=None)
+
+    async def close_dialog(self, dialog_id: str, agent_id: str) -> StatusResponse:
+        owner_agent_id = await self.kc.get(f"dialog:{dialog_id}:agent_id")
+        if owner_agent_id != agent_id:
+            raise Exception("Agent does not own this dialog")
+        
+        user_id = await self.kc.get(f"dialog:{dialog_id}:user_id")
+        await self.kc.set(f"dialog:{dialog_id}:state", DialogState.CLOSED.value)
+
+        closing_message = json.dumps({"status": "closed", "role": "system", "text": "Диалог завершен оператором."})
+        await self.kc.rpush(f"dialog:{dialog_id}:user_queue", [closing_message])
+
+        if user_id:
+            log_payload = {"method": "log_state_change", "params": {"dialog_id": dialog_id, "user_id": user_id, "state": DialogState.CLOSED.value, "changed_by": agent_id}}
+            await self.dg_client.send_fire_and_forget(DataQueryRequest(action=Enum__DataWorkerActions.copilot_db_request, data_source_code="ch01", payload=log_payload))
+
+        return StatusResponse(status="closed")
+        
+    async def rate_dialog(self, dialog_id: str, user_id: str, rating: str) -> StatusResponse:
+        if rating not in ["like", "dislike"]:
+            raise ValueError("Rating must be 'like' or 'dislike'")
+            
+        rating_payload = {"method": "log_rating", "params": {"dialog_id": dialog_id, "user_id": user_id, "rating": rating}}
+        await self.dg_client.send_fire_and_forget(DataQueryRequest(action=Enum__DataWorkerActions.copilot_db_request, data_source_code="ch01", payload=rating_payload))
+        return StatusResponse(status="rating_recorded")
+
+    async def get_user_dialogs(self, user_id: str) -> List[Dict[str, Any]]:
+        logger.info(f"AgentService: получение диалогов для пользователя {user_id}")
+        dialogs = await self.dg_repo.get_user_dialogs(user_id=user_id)
+        if not dialogs:
+            return []
+
+        dialog_ids = [d["id"] for d in dialogs]
+        keys = [f"dialog:{dialog_id}:state" for dialog_id in dialog_ids]
+        statuses = await self.kc.mget(keys)
+
+        for i, dialog in enumerate(dialogs):
+            status = statuses[i]
+            dialog["status"] = status if status else DialogState.AI_HANDLED.value
+
+        return dialogs
+
+    async def get_agent_messages(self, user_id: str, session_id: str) -> GetMessagesResponse:
+        user_queue = f"dialog:{session_id}:user_queue"
+        logger.debug(f"Ожидание сообщения в очереди: {user_queue}")
+        
+        message = await self.kc.blpop([user_queue], timeout=30)
+        
+        if message:
+            try:
+                message_data = json.loads(message[1])
+                if message_data.get('role') == 'agent' or message_data.get('status') == 'closed':
+                    return GetMessagesResponse(message=PolledMessage(**message_data))
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.error(f"Ошибка парсинга сообщения из очереди {user_queue}: {e}")
+
+        return GetMessagesResponse(message=None)
+
+    async def send_user_message_to_agent(self, user_id: str, session_id: str, text: str) -> StatusResponse:
+        state = await self.kc.get(f"dialog:{session_id}:state")
+        if state == DialogState.CLOSED.value:
+            raise Exception("Невозможно отправить сообщение в закрытый диалог")
+
+        last_id = await self.dg_repo.get_last_message_id(user_id=user_id, session_id=session_id)
+        new_message_id = (last_id or 0) + 1
+        
+        await self.dg_repo.insert(
+            user_id=user_id,
+            session_id=session_id,
+            message_id=new_message_id,
+            role='user',
+            text=text
+        )
+
+        agent_queue = f"dialog:{session_id}:agent_queue"
+        message_payload = json.dumps({"role": "user", "text": text})
+        await self.kc.rpush(agent_queue, [message_payload])
+        
+        return StatusResponse(status="sent")
+
+    async def delete_dialog(self, user_id: str, session_id: str) -> Dict[str, str]:
+        logger.info(f"AgentService: удаление диалога {session_id} для пользователя {user_id}")
+        await self.dg_repo.delete_dialog(user_id=user_id, session_id=session_id)
+        return {"status": "ok"}
+
+    async def get_dialog_history(self, user_id: str, session_id: str) -> List[Dict[str, str]]:
+        logger.info(f"AgentService: получение истории для диалога {session_id}")
+        dialog_history = await self.dg_repo.get_dialog_history(user_id=user_id, session_id=session_id)
+        return dialog_history
