@@ -77,237 +77,454 @@ curl -X 'GET' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjQiLCJleHAiOjE3NjE0OTY2NjF9.shQKNMdMyn-z-W5b5Qi48vYRFuKFhJpl3W7y9CCWbQY'
 
 
-import json
-import logging
-from typing import Any, Dict, List
+// src/api/copilot.ts
 
-from coredis import KeyDB as KeyDbClient
-from mbi.copilot.backend.src.components.agent_service.core.IAgentService import IAgentService
-from mbi.copilot.backend.src.infrastructure.datagate.repositories.impl.DataGateRepository import DataGateRepository
-from mbi.copilot.backend.src.web.models.agent_models import *
-from mbi.copilot.backend.src.components.tools.impl.CallSupportTool import DialogState
-from mbi.datagate.client import DataGateClientPart
-from mbi.datagate.iface import DataQueryRequest
-from mbi.datagate.conf import Enum__DataWorkerActions
+import { Chat, Message } from '../types';
+import { API_PATH } from '../utils';
 
-logger = logging.getLogger(__name__)
+async function agentApiRequest<T>(
+  baseURL: string,
+  action: string,
+  params: object
+): Promise<T> {
+  const fullUrl = `${baseURL}/agent_console/prod/v1/`; 
 
-class AgentService(IAgentService):
-    def __init__(self, kc: KeyDbClient, dg_client: DataGateClientPart):
-        self.kc = kc
-        self.dg_client = dg_client
-        self.dg_repo = DataGateRepository(dg_client=dg_client)
+  const response = await fetch(fullUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, params }),
+  });
 
-    async def get_statistics(self) -> StatisticsResponse:
-        stats_payload = {"method": "get_statistics"}
-        req = DataQueryRequest(
-            action=Enum__DataWorkerActions.copilot_db_request,
-            data_source_code="ch01",
-            payload=stats_payload
-        )
-        response = await self.dg_client._send_request(req.to_dic(), 1)
-        if response and response.get("res"):
-            return StatisticsResponse.model_validate(response["res"])
-        raise Exception("Could not retrieve statistics from Data Gate.")
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`API Error for action "${action}":`, errorBody);
+    try {
+      const errorJson = JSON.parse(errorBody);
+      if (errorJson.detail) {
+        throw new Error(errorJson.detail);
+      }
+    } catch (e) {
+    }
+    throw new Error(`Request failed with status ${response.status}: ${errorBody}`);
+  }
 
-    async def get_awaiting_dialogs(self) -> List[DialogModel]:
-        dialog_payloads_str = await self.kc.lrange("dialogs:awaiting_agent_queue", 0, -1)
-        dialogs = []
-        for payload_str in dialog_payloads_str:
-            try:
-                # ++ НАЧАЛО ИЗМЕНЕНИЙ ++
-                # Добавлена обработка ошибок на случай невалидных данных в очереди
-                payload = json.loads(payload_str)
-                if 'dialog_id' in payload and 'user_id' in payload:
-                    dialogs.append(DialogModel(id=payload['dialog_id'], userId=payload['user_id']))
-                else:
-                    logger.warning(f"Invalid payload structure in awaiting_dialogs queue: {payload_str}")
-                # -- КОНЕЦ ИЗМЕНЕНИЙ --
-            except (json.JSONDecodeError, TypeError):
-                logger.error(f"Failed to parse JSON from awaiting_dialogs queue: '{payload_str}'")
-        return dialogs
+  return response.json();
+}
 
-    async def claim_dialog(self, dialog_id: str, agent_id: str, user_id: str) -> ClaimDialogResponse:
-        # ## ++ НАЧАЛО ИЗМЕНЕНИЙ: Полностью переработанный метод ++
-        # 1. Пытаемся удалить диалог из очереди
-        queue_payload = json.dumps({"dialog_id": dialog_id, "user_id": user_id})
-        removed_count = await self.kc.lrem("dialogs:awaiting_agent_queue", 1, queue_payload)
-        
-        # Если не удалось удалить, значит кто-то другой уже забрал диалог
-        if removed_count == 0:
-            raise Exception("Dialog already claimed or not found")
+export async function sendToCopilot(
+  baseURL: string, 
+  payload: {
+    user_id: string;
+    first_message: boolean;
+    dialog_id: string | null;
+    user_prompt: string;
+  }
+): Promise<{ dialog_id?: string | null; message?: string | null; history?: Array<any> | null }> {
+  
+  const fullUrl = `${baseURL}${API_PATH}`;
 
-        # 2. Атомарно обновляем состояние диалога в KeyDB
-        async with await self.kc.pipeline(transaction=True) as pipe:
-            await pipe.set(f"dialog:{dialog_id}:agent_id", agent_id)
-            await pipe.set(f"dialog:{dialog_id}:state", DialogState.AGENT_HANDLED.value)
-            await pipe.set(f"dialog:{dialog_id}:user_id", user_id)
-            await pipe.execute()
-        
-        # 3. Отправляем лог об изменении статуса (fire-and-forget)
-        log_payload = {"method": "log_state_change", "params": {"dialog_id": dialog_id, "user_id": user_id, "state": DialogState.AGENT_HANDLED.value, "changed_by": agent_id}}
-        await self.dg_client.send_fire_and_forget(DataQueryRequest(action=Enum__DataWorkerActions.copilot_db_request, data_source_code="ch01", payload=log_payload))
+  const res = await fetch(fullUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
 
-        # 4. Загружаем историю и анализ прямо здесь, чтобы избежать лишних запросов
-        logger.info(f"Загрузка истории и анализа для диалога {dialog_id}")
-        
-        # Загружаем историю
-        history_res = await self.dg_repo.get_dialog_history(user_id=user_id, session_id=dialog_id)
-        formatted_history = [
-            MessageModel(id=f"hist-{dialog_id}-{i}", role=msg.get("role"), content=msg.get("content"))
-            for i, msg in enumerate(history_res) if msg.get("role") != "system"
-        ]
+  if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`Network response was not ok: ${res.statusText} - ${errorBody}`);
+  }
 
-        # Загружаем анализ
-        analysis_text = await self.kc.get(f"dialog:{dialog_id}:analysis")
+  const json = await res.json();
+  return json ?? {};
+}
 
-        # 5. Возвращаем полный объект с историей и анализом
-        return ClaimDialogResponse(
-            history=formatted_history, 
-            analysis=analysis_text, 
-            dialog=DialogModel(id=dialog_id, userId=user_id)
-        )
-        # ## -- КОНЕЦ ИЗМЕНЕНИЙ --
+export async function pollAgentMessages(
+  baseURL: string,
+  payload: { user_id: string; dialog_id: string },
+  signal: AbortSignal
+): Promise<{ message: { text: string; role: 'agent' | 'system'; status?: 'closed' } | null }> {
+  const response = await fetch(`${baseURL}/agent_console/prod/v1/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'get_agent_messages',
+      params: {
+        user_id: payload.user_id,
+        session_id: payload.dialog_id,
+      },
+    }),
+    signal,
+  });
 
-    async def get_dialog_details(self, dialog_id: str, agent_id: str) -> DialogDetailsResponse:
-        owner_agent_id = await self.kc.get(f"dialog:{dialog_id}:agent_id")
-        if owner_agent_id != agent_id:
-            raise Exception("Agent does not own this dialog")
+  if (!response.ok) {
+    if (signal.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+    }
+    throw new Error(`Не удалось получить сообщения от сотрудника: ${response.statusText}`);
+  }
+  return response.json();
+}
 
-        user_id = await self.kc.get(f"dialog:{dialog_id}:user_id")
-        if not user_id:
-            raise Exception("User ID for dialog not found")
-        
-        history_res = await self.dg_repo.get_dialog_history(user_id=user_id, session_id=dialog_id)
-        
-        formatted_history = [
-            MessageModel(id=f"hist-{dialog_id}-{i}", role=msg.get("role"), content=msg.get("content"))
-            for i, msg in enumerate(history_res) if msg.get("role") != "system"
-        ]
-        analysis_text = await self.kc.get(f"dialog:{dialog_id}:analysis")
+export async function sendToAgent(
+  baseURL: string,
+  payload: {
+    user_id: string;
+    dialog_id: string;
+    user_prompt: string;
+  }
+): Promise<{ status: 'sent' }> {
+  return agentApiRequest(baseURL, 'send_user_message_to_agent', {
+    user_id: payload.user_id,
+    session_id: payload.dialog_id,
+    text: payload.user_prompt,
+  });
+}
 
-        return DialogDetailsResponse(
-            dialog=DialogModel(id=dialog_id, userId=user_id),
-            messages=formatted_history,
-            analysis=analysis_text
-        )
+export function pickReplyText(resp: { message?: string | null; history?: any[] | null }): string {
+  if (resp?.message) return String(resp.message);
+  const hist = resp?.history ?? [];
+  const lastAi = [...hist].reverse().find((m: any) => m?.type === 'ai' && m?.content);
+  return lastAi?.content ?? 'Готово.';
+}
 
-    async def send_message(self, dialog_id: str, agent_id: str, user_id: str, text: str) -> StatusResponse:
-        state = await self.kc.get(f"dialog:{dialog_id}:state")
-        if state == DialogState.CLOSED.value:
-            raise Exception("Cannot send message to a closed dialog")
+export async function fetchUserDialogs(baseURL: string, userId: string): Promise<Chat[]> {
+  const response = await agentApiRequest<{ dialogs: any[] }>(baseURL, 'get_user_dialogs', { user_id: userId });
+  const dialogs = response.dialogs || [];
+  
+  return dialogs.map((d: any) => ({
+    id: d.id,
+    title: `Диалог от ${new Date(d.created_at).toLocaleDateString('ru-RU')}`,
+    dialogId: d.id,
+    status: d.status,
+  }));
+}
 
-        last_id = await self.dg_repo.get_last_message_id(user_id=user_id, session_id=dialog_id)
-        new_message_id = (last_id or 0) + 1
+export async function fetchDialogHistory(
+  baseURL: string,
+  payload: { user_id: string; dialog_id: string }
+): Promise<Message[]> {
+  const response = await agentApiRequest<{ history: any[] }>(baseURL, 'get_dialog_history', {
+    user_id: payload.user_id,
+    session_id: payload.dialog_id,
+  });
 
-        await self.dg_repo.insert(user_id=user_id, session_id=dialog_id, message_id=new_message_id, role="agent", text=text)
+  const history = response.history || [];
 
-        message_payload = json.dumps({"status": "ok", "role": "agent", "text": text})
-        await self.kc.rpush(f"dialog:{dialog_id}:user_queue", [message_payload])
-        
-        return StatusResponse(status="sent")
+  // --- ИЗМЕНЕНИЯ ЗДЕСЬ ---
+  // 1. Фильтруем системные сообщения.
+  // 2. Корректно определяем роль 'agent'.
+  return history
+    .filter((msg: any) => msg.role !== 'system')
+    .map((msg: any, index: number) => ({
+      id: msg.message_id?.toString() || String(Date.now() + index),
+      from: msg.role === 'user' ? 'me' : (msg.role === 'agent' ? 'agent' : 'bot'),
+      text: msg.content || '',
+    }));
+  // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+}
+
+export async function deleteDialog(
+  baseURL: string,
+  payload: { user_id: string; session_id: string }
+): Promise<void> {
+  await agentApiRequest(baseURL, 'delete_dialog', payload);
+}
+
+
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { ThemeProvider, Stack } from 'ui-kit';
+
+import { Chat, Message, ChatWidgetProps} from './types';
+import { themeFromKey, LS_ACTIVE } from './utils';
+import { 
+    pickReplyText, 
+    sendToCopilot, 
+    fetchUserDialogs, 
+    fetchDialogHistory, 
+    deleteDialog,
+    pollAgentMessages,
+    sendToAgent
+} from './api/copilot';
+import ActiveChatPanel from './components/ActiveChatPanel';
+import ChatListPanel from './components/ChatListPanel';
+
+const ChatWidget: React.FC<ChatWidgetProps> = ({ userId, baseURL, themeKey }) => {
+  
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string>('');
+  const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>({});
+  const [draft, setDraft] = useState<string>('');
+  const [typingMap, setTypingMap] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+
+  const listRef = useRef<HTMLDivElement>(null);
+  const chatsRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const messages = activeChatId ? (messagesMap[activeChatId] ?? []) : [];
+  const isTyping = !!typingMap[activeChatId];
+  const activeTitle = useMemo(() => chats.find(c => c.id === activeChatId)?.title ?? 'Чат', [activeChatId, chats]);
+
+  useEffect(() => { if (activeChatId) localStorage.setItem(LS_ACTIVE, activeChatId); }, [activeChatId]);
+
+  useEffect(() => {
+    const loadDialogs = async () => {
+      if (!userId || !baseURL) return;
+      try {
+        setLoading(true);
+        const loadedChats = await fetchUserDialogs(baseURL, userId);
+        setChats(loadedChats);
+        const savedActive = localStorage.getItem(LS_ACTIVE);
+        if (savedActive && loadedChats.some(c => c.id === savedActive)) {
+          setActiveChatId(savedActive);
+        } else if (loadedChats.length > 0) {
+          setActiveChatId(loadedChats[0].id);
+        }
+      } catch (error) {
+        console.error("Ошибка загрузки диалогов:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadDialogs();
+  }, [userId, baseURL]);
+
+  const loadMessages = useCallback(async () => {
+    if (!activeChatId || !userId || !baseURL) return;
+    const chat = chats.find(c => c.id === activeChatId);
+    if (!chat?.dialogId) {
+      setMessagesMap(prev => ({ ...prev, [activeChatId]: [] }));
+      return;
+    }
+    try {
+      const messages = await fetchDialogHistory(baseURL, {
+        user_id: userId,
+        dialog_id: chat.dialogId,
+      });
+      setMessagesMap(prev => ({ ...prev, [activeChatId]: messages }));
+    } catch (error) {
+      console.error("Ошибка загрузки истории:", error);
+      setMessagesMap(prev => ({ ...prev, [activeChatId]: [] }));
+    }
+  }, [activeChatId, userId, baseURL, chats]);
+
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
+  
+  const handleCreateChat = useMemo(() => () => {
+    const newId = String(Date.now());
+    setChats(prev => [...prev, { id: newId, title: `Новый чат ${prev.length + 1}`, dialogId: null, status: 'AI_HANDLED' }]);
+    setMessagesMap(prev => ({ ...prev, [newId]: [] }));
+    setActiveChatId(newId);
+    requestAnimationFrame(() => {
+      if (chatsRef.current) chatsRef.current.scrollTop = chatsRef.current.scrollHeight;
+      inputRef.current?.focus();
+    });
+  }, []);
+
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [messages.length, isTyping]);
+  
+  const handleSend = async () => {
+    const text = draft.trim();
+    if (!text || !activeChatId || !userId || !baseURL) return;
+
+    const chat = chats.find(c => c.id === activeChatId);
+    if (!chat) return;
+
+    const isAgentChat = chat.status === 'AGENT_HANDLED';
+    const messageId = String(Date.now());
+
+    setMessagesMap(prev => ({
+      ...prev,
+      [activeChatId]: [...(prev[activeChatId] ?? []), { id: messageId, from: 'me', text }],
+    }));
+    setDraft('');
     
-    async def get_messages(self, dialog_id: str) -> GetMessagesResponse:
-        agent_queue = f"dialog:{dialog_id}:agent_queue"
-        logger.debug(f"Ожидание сообщения в очереди: {agent_queue}")
+    const isFirstMessage = (messagesMap[activeChatId]?.length ?? 0) === 1;
+    if (isFirstMessage && !chat.dialogId) {
+        const newTitle = text.length > 30 ? text.substring(0, 27) + '...' : text;
+        setChats(prev => prev.map(c => (c.id === activeChatId ? { ...c, title: newTitle } : c)));
+    }
 
-        message = await self.kc.blpop([agent_queue], timeout=30)
-        
-        if message:
-            try:
-                message_data = json.loads(message[1])
-                if message_data.get('role') == 'user':
-                    return GetMessagesResponse(message=PolledMessage(**message_data))
-            except (json.JSONDecodeError, TypeError) as e:
-                logger.error(f"Ошибка парсинга сообщения из очереди {agent_queue}: {e}")
-        
-        return GetMessagesResponse(message=None)
+    if (isAgentChat && chat.dialogId) {
+      try {
+        await sendToAgent(baseURL, {
+          user_id: userId,
+          dialog_id: chat.dialogId,
+          user_prompt: text,
+        });
+      } catch (e) {
+        console.error('Ошибка отправки сообщения сотруднику:', e);
+        setMessagesMap(prev => ({
+            ...prev,
+            [activeChatId]: prev[activeChatId].map(m => 
+                m.id === messageId ? { ...m, text: `${m.text} (Ошибка отправки)` } : m
+            ),
+        }));
+      }
+    } else {
+      setTypingMap(prev => ({ ...prev, [activeChatId]: true }));
+      try {
+        const resp = await sendToCopilot(baseURL, {
+          user_id: userId,
+          first_message: isFirstMessage,
+          dialog_id: chat.dialogId ?? null,
+          user_prompt: text
+        });
 
-    async def close_dialog(self, dialog_id: str, agent_id: str) -> StatusResponse:
-        owner_agent_id = await self.kc.get(f"dialog:{dialog_id}:agent_id")
-        if owner_agent_id != agent_id:
-            raise Exception("Agent does not own this dialog")
-        
-        user_id = await self.kc.get(f"dialog:{dialog_id}:user_id")
-        await self.kc.set(f"dialog:{dialog_id}:state", DialogState.CLOSED.value)
+        const updatedDialogId = resp.dialog_id ? String(resp.dialog_id) : chat.dialogId;
+        if (updatedDialogId && updatedDialogId !== chat.dialogId) {
+          setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, dialogId: updatedDialogId, status: 'AI_HANDLED' } : c));
+        }
 
-        closing_message = json.dumps({"status": "closed", "role": "system", "text": "Диалог завершен оператором."})
-        await self.kc.rpush(f"dialog:{dialog_id}:user_queue", [closing_message])
+        const reply = pickReplyText(resp);
+        const rid = String(Date.now() + 1);
+        setMessagesMap(prev => ({ ...prev, [activeChatId]: [...(prev[activeChatId] ?? []), { id: rid, from: 'bot', text: reply }] }));
+      } catch (e) {
+        console.error(e);
+        const rid = String(Date.now() + 1);
+        setMessagesMap(prev => ({ ...prev, [activeChatId]: [...(prev[activeChatId] ?? []), { id: rid, from: 'bot', text: 'Не удалось получить ответ от сервера.' }] }));
+      } finally {
+        setTypingMap(prev => ({ ...prev, [activeChatId]: false }));
+        requestAnimationFrame(() => inputRef.current?.focus());
+      }
+    }
+  };
 
-        if user_id:
-            log_payload = {"method": "log_state_change", "params": {"dialog_id": dialog_id, "user_id": user_id, "state": DialogState.CLOSED.value, "changed_by": agent_id}}
-            await self.dg_client.send_fire_and_forget(DataQueryRequest(action=Enum__DataWorkerActions.copilot_db_request, data_source_code="ch01", payload=log_payload))
+  useEffect(() => {
+    const activeChat = chats.find(c => c.id === activeChatId);
 
-        return StatusResponse(status="closed")
-        
-    async def rate_dialog(self, dialog_id: str, user_id: str, rating: str) -> StatusResponse:
-        if rating not in ["like", "dislike"]:
-            raise ValueError("Rating must be 'like' or 'dislike'")
-            
-        rating_payload = {"method": "log_rating", "params": {"dialog_id": dialog_id, "user_id": user_id, "rating": rating}}
-        await self.dg_client.send_fire_and_forget(DataQueryRequest(action=Enum__DataWorkerActions.copilot_db_request, data_source_code="ch01", payload=rating_payload))
-        return StatusResponse(status="rating_recorded")
+    if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+    }
 
-    async def get_user_dialogs(self, user_id: str) -> List[Dict[str, Any]]:
-        logger.info(f"AgentService: получение диалогов для пользователя {user_id}")
-        dialogs = await self.dg_repo.get_user_dialogs(user_id=user_id)
-        if not dialogs:
-            return []
+    if (!activeChat?.dialogId || !['AGENT_HANDLED', 'AWAITING_AGENT'].includes(activeChat.status!)) {
+      return;
+    }
 
-        dialog_ids = [d["id"] for d in dialogs]
-        keys = [f"dialog:{dialog_id}:state" for dialog_id in dialog_ids]
-        statuses = await self.kc.mget(keys)
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-        for i, dialog in enumerate(dialogs):
-            status = statuses[i]
-            dialog["status"] = status if status else DialogState.AI_HANDLED.value
+    const poll = async () => {
+        console.log(`Polling started for dialog: ${activeChat.dialogId}`);
+        while (!controller.signal.aborted) {
+            try {
+                const data = await pollAgentMessages(baseURL, { user_id: userId, dialog_id: activeChat.dialogId! }, controller.signal);
 
-        return dialogs
+                if (controller.signal.aborted) {
+                    console.log(`Polling aborted for dialog: ${activeChat.dialogId}`);
+                    break;
+                }
 
-    async def get_agent_messages(self, user_id: str, session_id: str) -> GetMessagesResponse:
-        user_queue = f"dialog:{session_id}:user_queue"
-        logger.debug(f"Ожидание сообщения в очереди: {user_queue}")
-        
-        message = await self.kc.blpop([user_queue], timeout=30)
-        
-        if message:
-            try:
-                message_data = json.loads(message[1])
-                if message_data.get('role') == 'agent' or message_data.get('status') == 'closed':
-                    return GetMessagesResponse(message=PolledMessage(**message_data))
-            except (json.JSONDecodeError, TypeError) as e:
-                logger.error(f"Ошибка парсинга сообщения из очереди {user_queue}: {e}")
+                if (data.message) {
+                    console.log("New message received:", data.message);
+                    const { text, role, status } = data.message;
+                    
+                    if (status === 'closed') {
+                        setMessagesMap(prev => ({ ...prev, [activeChatId]: [...(prev[activeChatId] ?? []), { id: String(Date.now()), from: 'bot', text: text }] }));
+                        setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, status: 'CLOSED' } : c));
+                        break;
+                    }
 
-        return GetMessagesResponse(message=None)
+                    if (role === 'agent') {
+                        setMessagesMap(prev => ({ ...prev, [activeChatId]: [...(prev[activeChatId] ?? []), { id: String(Date.now()), from: 'agent', text: text }] }));
+                        if (activeChat.status === 'AWAITING_AGENT') {
+                            setChats(prev => prev.map(c => c.id === activeChatId ? { ...c, status: 'AGENT_HANDLED' } : c));
+                        }
+                    }
+                }
+            } catch (e: any) {
+                if (e.name !== 'AbortError') {
+                    console.error('Long-polling ошибка:', e);
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                } else {
+                    console.log("Polling aborted via signal.");
+                }
+            }
+        }
+        console.log(`Polling stopped for dialog: ${activeChat.dialogId}`);
+    };
 
-    async def send_user_message_to_agent(self, user_id: str, session_id: str, text: str) -> StatusResponse:
-        state = await self.kc.get(f"dialog:{session_id}:state")
-        if state == DialogState.CLOSED.value:
-            raise Exception("Невозможно отправить сообщение в закрытый диалог")
+    poll();
 
-        last_id = await self.dg_repo.get_last_message_id(user_id=user_id, session_id=session_id)
-        new_message_id = (last_id or 0) + 1
-        
-        await self.dg_repo.insert(
-            user_id=user_id,
-            session_id=session_id,
-            message_id=new_message_id,
-            role='user',
-            text=text
-        )
+    return () => {
+      console.log("Cleanup: aborting controller.");
+      controller.abort();
+    };
+  }, [activeChatId, chats, baseURL, userId]);
 
-        agent_queue = f"dialog:{session_id}:agent_queue"
-        message_payload = json.dumps({"role": "user", "text": text})
-        await self.kc.rpush(agent_queue, [message_payload])
-        
-        return StatusResponse(status="sent")
+  const removeChatLocally = (idToDelete: string) => {
+    const remainingChats = chats.filter(c => c.id !== idToDelete);
+    setChats(remainingChats);
+    setMessagesMap(prev => {
+      const newMap = { ...prev };
+      delete newMap[idToDelete];
+      return newMap;
+    });
+  
+    if (activeChatId === idToDelete) {
+      setActiveChatId(remainingChats[0]?.id ?? '');
+    }
+  };
 
-    async def delete_dialog(self, user_id: str, session_id: str) -> Dict[str, str]:
-        logger.info(f"AgentService: удаление диалога {session_id} для пользователя {user_id}")
-        await self.dg_repo.delete_dialog(user_id=user_id, session_id=session_id)
-        return {"status": "ok"}
+  const deleteChat = async (idToDelete: string) => {
+    const chatToDelete = chats.find(c => c.id === idToDelete);
+    
+    removeChatLocally(idToDelete);
+  
+    if (chatToDelete?.dialogId) {
+      deleteDialog(baseURL, {
+        user_id: userId,
+        session_id: chatToDelete.dialogId,
+      }).catch((error) => {
+        console.error("Ошибка удаления диалога на сервере:", error);
+        setChats(prev => [...prev, chatToDelete]);
+        alert("Не удалось удалить диалог. Повторите попытку.");
+      });
+    }
+  };
 
-    async def get_dialog_history(self, user_id: str, session_id: str) -> List[Dict[str, str]]:
-        logger.info(f"AgentService: получение истории для диалога {session_id}")
-        dialog_history = await self.dg_repo.get_dialog_history(user_id=user_id, session_id=session_id)
-        return dialog_history
+  if (loading) {
+    return (
+      <ThemeProvider theme={themeFromKey(themeKey)}>
+        <div style={{ padding: 20, textAlign: 'center' }}>
+          Загрузка диалогов...
+        </div>
+      </ThemeProvider>
+    );
+  }
+
+  return (
+    <ThemeProvider theme={themeFromKey(themeKey)}>
+      <Stack direction="row" fullWidth style={{ height: '100vh' }}>
+        <ChatListPanel
+          chats={chats}
+          activeChatId={activeChatId}
+          chatsRef={chatsRef}
+          setActiveChatId={setActiveChatId}
+          handleCreateChat={handleCreateChat}
+          deleteChat={deleteChat}
+        />
+        <ActiveChatPanel
+          chats={chats}
+          activeTitle={activeTitle}
+          messages={messages}
+          isTyping={isTyping}
+          draft={draft}
+          listRef={listRef}
+          inputRef={inputRef}
+          setDraft={setDraft}
+          handleSend={handleSend}
+        />
+      </Stack>
+    </ThemeProvider>
+  );
+};
+
+export default ChatWidget;
+
+
