@@ -754,4 +754,134 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ userId, baseURL, themeKey }) =>
 export default ChatWidget;
 
 
+import React from 'react';
+import { Stack, CroppedText, Grid, Card, Avatar, Loader, Input, IconButton } from 'ui-kit';
+import { Message, Chat } from '../types';
+import { bubbleStyle } from '../utils';
+import { SendIcon, SparkIcon, AgentIcon } from './icons'; // Убедитесь, что все иконки импортированы
+import MdMessage from './MdMessage';
+import { ActiveChatPanelProps } from '../types';
+
+const ActiveChatPanel: React.FC<ActiveChatPanelProps> = ({
+  chats,
+  activeTitle,
+  messages,
+  isTyping,
+  draft,
+  listRef,
+  inputRef,
+  setDraft,
+  handleSend,
+  isChatClosed,
+}) => {
+
+  // --- ИЗМЕНЕНИЯ ЗДЕСЬ ---
+  // Эта функция теперь решает, какую иконку показать
+  const renderAvatar = (from: Message['from']) => {
+    const avatarProps = { size: 'small' as const }; // `as const` для строгости типов
+
+    switch (from) {
+      // Сообщения пользователя - стандартный аватар
+      case 'me':
+        return <Avatar {...avatarProps} />;
+      
+      // Сообщения ИИ-ассистента - иконка "звездочка"
+      case 'bot':
+        return <Avatar {...avatarProps}><SparkIcon size="small" /></Avatar>;
+
+      // Сообщения сотрудника - иконка "оператор"
+      case 'agent':
+        return <Avatar {...avatarProps}><AgentIcon size="small" /></Avatar>;
+
+      // По умолчанию, если что-то пойдет не так
+      default:
+        return <Avatar {...avatarProps} />;
+    }
+  };
+  // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+
+  return (
+    <Stack direction="column" fullWidth style={{ flex: 1, minHeight: 0 }}>
+      <Stack
+        direction="column"
+        alignItems="center"
+        style={{ padding: '10px 12px 6px', borderBottom: '1px solid var(--ui-kit-colors-border-primary)' }}
+      >
+        <CroppedText variant="heading5" color="primary" style={{ textAlign: 'center' }}>
+          {activeTitle}
+        </CroppedText>
+      </Stack>
+
+      <div ref={listRef} style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+        {chats.length === 0 ? (
+          <Stack direction="column" alignItems="center" justifyContent="center" style={{ height: '100%', padding: '24px' }}>
+            {/* ... Экран приветствия ... */}
+          </Stack>
+        ) : (
+          <Grid gap="10px" style={{ padding: '14px 18px' }}>
+            {messages.map(m => (
+              <Stack key={m.id} direction="row" justifyContent={m.from === 'me' ? 'flex-end' : 'flex-start'} gap="10px" alignItems="flex-end">
+                
+                {/* Аватар слева для бота или агента */}
+                {m.from !== 'me' && renderAvatar(m.from)}
+                
+                <Card fullWidth={false} style={bubbleStyle(m.from === 'me')}>
+                    {m.from === 'bot' || m.from === 'agent' ? (
+                      <MdMessage text={m.text} />
+                    ) : (
+                      <CroppedText style={{ maxWidth: 640, whiteSpace: 'pre-wrap' }}>
+                        {m.text}
+                      </CroppedText>
+                    )}
+                </Card>
+
+                {/* Аватар справа для пользователя */}
+                {m.from === 'me' && renderAvatar(m.from)}
+
+              </Stack>
+            ))}
+            {isTyping && (
+              <Stack direction="row" justifyContent="flex-start">
+                <Card fullWidth={false} style={bubbleStyle(false)}>
+                  <Stack direction="row" gap="8px" alignItems="center">
+                    <Loader size="small" color="primary" />
+                    <CroppedText color="secondary">Ассистент печатает…</CroppedText>
+                  </Stack>
+                </Card>
+              </Stack>
+            )}
+          </Grid>
+        )}
+      </div>
+
+      <Stack direction="column" gap="8px" style={{ padding: '12px 16px', borderTop: '1px solid var(--ui-kit-colors-border-primary)' }}>
+        {/* ... Alert о закрытии чата ... */}
+        <Stack direction="row" gap="8px">
+          <Input
+            ref={inputRef as any}
+            fullWidth
+            placeholder={isChatClosed ? "Диалог завершен" : "Напишите сообщение…"}
+            value={draft}
+            onChange={(e: any) => setDraft(e.target.value)}
+            onKeyDown={(e: any) => { if (e.key === 'Enter') handleSend() }}
+            style={{ minHeight: 44 }}
+            disabled={chats.length === 0 || isChatClosed}
+          />
+          <IconButton
+            icon={SendIcon}
+            variant="contained"
+            color="primary"
+            onClick={handleSend}
+            title="Отправить"
+            disabled={!draft.trim() || chats.length === 0 || isChatClosed}
+            loading={isTyping}
+          />
+        </Stack>
+      </Stack>
+    </Stack>
+  );
+};
+
+export default ActiveChatPanel;
+
 
