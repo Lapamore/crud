@@ -5,5 +5,5 @@ __all__ = [
     "UserCreate", 
     "UserUpdate", 
     "Token", 
-    "TokenData"
+    "TokenData",
 ]

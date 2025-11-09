@@ -22,20 +22,6 @@ async def register_user(user: schemas.UserCreate, db: AsyncSession = Depends(get
         raise HTTPException(status_code=400, detail="Username already taken")
     return await user_service.create_user(db=db, user=user)
 
-@router.get("/users/{user_id}", response_model=schemas.UserPublic)
-async def get_user_by_id(
-    user_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
-):
-    if current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-    
-    user = await user_service.get_user(db, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
-
 @router.post("/users/login", response_model=schemas.Token)
 async def login_for_access_token(db: AsyncSession = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
     user = await user_service.get_user_by_username(db, username=form_data.username)
