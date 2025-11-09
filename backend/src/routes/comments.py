@@ -1,12 +1,12 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import models, schemas
+from .. import schemas
 from ..services import article as article_service
 from ..services import comment as comment_service
 from .deps import get_db, get_current_user
+from ..schemas import AuthenticatedUser
 
 router = APIRouter()
 
@@ -16,7 +16,7 @@ async def create_comment_for_article(
     slug: str,
     comment: schemas.CommentCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     db_article = await article_service.get_article_by_slug(db, slug=slug)
     if db_article is None:
@@ -39,7 +39,7 @@ async def delete_comment(
     slug: str,
     id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     db_article = await article_service.get_article_by_slug(db, slug=slug)
     if db_article is None:
@@ -54,5 +54,3 @@ async def delete_comment(
 
     await comment_service.delete_comment(db=db, db_comment=db_comment)
     return
-
-  

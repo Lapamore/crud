@@ -10,8 +10,8 @@ curl -X 'POST' \
     -H 'accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{
-    "email": "user1@example.com",
-    "username": "testuser1",
+    "email": "user12@example.com",
+    "username": "testuser2",
     "password": "password123"
 }'
 
@@ -20,13 +20,14 @@ curl -X 'POST' \
   'http://localhost:8001/api/users/login' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'username=testuser1&password=password123'
+  -d 'username=testuser2&password=password123'
 
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjIiLCJleHAiOjE3NjI2NzExNjN9.ud9IZesbs6HvsIg25szhgfnV_Wb30aFRw1Oai1XFIZ8
   
 curl -X 'POST' \
   'http://localhost:8001/api/articles' \
   -H 'accept: application/json' \
-  -H 'Authorization: Bearer <ВАШ_ТОКЕН>' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjIiLCJleHAiOjE3NjI2NzExNjN9.ud9IZesbs6HvsIg25szhgfnV_Wb30aFRw1Oai1XFIZ8' \
   -H 'Content-Type: application/json' \
   -d '{
   "title": "My First Article",
@@ -37,7 +38,7 @@ curl -X 'POST' \
 curl -X 'PUT' \
   'http://localhost:8001/api/articles/my-second-article' \
   -H 'accept: application/json' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjEiLCJleHAiOjE3NjE0OTI5MTN9.oP5dDV9qfpCE1549X972Zsz19r0LdB_S5tB962z1ed0' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjIiLCJleHAiOjE3NjI2NzExNjN9.ud9IZesbs6HvsIg25szhgfnV_Wb30aFRw1Oai1XFIZ8' \
   -H 'Content-Type: application/json' \
   -d '{
   "title": "My Updated Article Title",
@@ -71,4 +72,4 @@ curl -X 'POST' \
 curl -X 'GET' \
   'http://localhost:8001/api/user' \
   -H 'accept: application/json' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjQiLCJleHAiOjE3NjE0OTY2NjF9.shQKNMdMyn-z-W5b5Qi48vYRFuKFhJpl3W7y9CCWbQY'
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0dXNlcjIiLCJleHAiOjE3NjI2NzExNjN9.ud9IZesbs6HvsIg25szhgfnV_Wb30aFRw1Oai1XFIZ8'

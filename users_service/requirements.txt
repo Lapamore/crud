@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+alembic
+pydantic-settings
+python-slugify
+passlib[bcrypt]
+python-jose[cryptography]
+greenlet

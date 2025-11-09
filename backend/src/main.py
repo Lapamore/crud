@@ -25,11 +25,13 @@ async def validation_exception_handler(request, exc):
         content={"detail": exc.errors()},
     )
 
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "backend"}
 
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Blog API"}
 
-app.include_router(users.router, prefix="/api", tags=["Users"])
 app.include_router(articles.router, prefix="/api", tags=["Articles"])
 app.include_router(comments.router, prefix="/api", tags=["Comments"])

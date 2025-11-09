@@ -1,11 +1,11 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import models, schemas
+from .. import schemas
 from ..services import article as article_service
 from .deps import get_db, get_current_user
+from ..schemas import AuthenticatedUser
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ router = APIRouter()
 async def create_article(
     article: schemas.ArticleCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     return await article_service.create_article(db=db, article=article, author_id=current_user.id)
     
@@ -35,7 +35,7 @@ async def update_article(
     slug: str,
     article_in: schemas.ArticleUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: AuthenticatedUser = Depends(get_current_user) # <-- Тип верный
 ):
     db_article = await article_service.get_article_by_slug(db, slug=slug)
     if db_article is None:
@@ -49,7 +49,7 @@ async def update_article(
 async def delete_article(
     slug: str,
     db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: AuthenticatedUser = Depends(get_current_user) # <-- ИСПРАВЛЕНО ЗДЕСЬ
 ):
     db_article = await article_service.get_article_by_slug(db, slug=slug)
     if db_article is None:

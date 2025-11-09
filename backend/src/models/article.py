@@ -1,6 +1,5 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
-
 from ..database import Base
 
 
@@ -12,8 +11,5 @@ class Article(Base):
     title = sa.Column(sa.String, nullable=False)
     description = sa.Column(sa.String, nullable=False)
     body = sa.Column(sa.String, nullable=False)
-    author_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"))
-
-    author = relationship("User", back_populates="articles")
-    comments = relationship("Comment", back_populates="article")
-    tags = sa.Column("tagList", sa.ARRAY(sa.String), nullable=True)
+    author_id = sa.Column(sa.Integer, nullable=False)
+    tagList = sa.Column(sa.ARRAY(sa.String), nullable=True)
