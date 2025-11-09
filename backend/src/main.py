@@ -3,7 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .routes import articles, users, comments
+from .routes import articles, comments
 
 app = FastAPI(
     title="Blog Platform API",
