@@ -5,11 +5,11 @@ from .. import models, schemas
 from .auth import get_password_hash
 
 
-async def get_user(db: Session, user_id: int):
+async def get_user(db: AsyncSession, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
 
 
-async def get_user_by_email(db: Session, email: str):
+async def get_user_by_email(db: AsyncSession, email: str):
     result = await db.query(models.User).filter(models.User.email == email)
     return result.scalar_one_or_none()
 
