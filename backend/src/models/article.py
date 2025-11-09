@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy.orm import relationship
 from ..database import Base
 
 
@@ -11,4 +12,5 @@ class Article(Base):
     description = sa.Column(sa.String, nullable=False)
     body = sa.Column(sa.String, nullable=False)
     author_id = sa.Column(sa.Integer, nullable=False)
-    tagList = sa.Column(sa.ARRAY(sa.String), nullable=True)
+    comments = relationship("Comment", back_populates="article", cascade="all, delete-orphan")
+    tags = sa.Column("tagList", sa.ARRAY(sa.String), nullable=True)
