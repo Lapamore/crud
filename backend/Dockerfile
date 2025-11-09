@@ -12,4 +12,4 @@ COPY alembic.ini .
 COPY migrations /app/migrations
 COPY ./src /app/src
 
-CMD ["/usr/local/bin/uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "10000"]
+CMD ["/usr/local/bin/uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
