@@ -26,12 +26,14 @@ async def create_article(db: AsyncSession, article: schemas.ArticleCreate, autho
 
 
 async def get_articles(db: AsyncSession, skip: int = 0, limit: int = 100):
-    result = await db.execute(select(models.Article).offset(skip).limit(limit))
+    query = select(models.Article).offset(skip).limit(limit)
+    result = await db.execute(query)
     return result.scalars().all()
 
 
 async def get_article_by_slug(db: AsyncSession, slug: str):
-    result = await db.execute(select(models.Article).filter(models.Article.slug == slug))
+    query = select(models.Article).where(models.Article.slug == slug)
+    result = await db.execute(query)
     return result.scalar_one_or_none()
 
 

@@ -23,7 +23,8 @@ async def get_comments_by_article_slug(db: AsyncSession, slug: str):
 
 
 async def get_comment(db: AsyncSession, comment_id: int):
-    result = await db.execute(select(models.Comment).filter(models.Comment.id == comment_id))
+    query = select(models.Comment).where(models.Comment.id == comment_id)
+    result = await db.execute(query)
     return result.scalar_one_or_none()
 
 
