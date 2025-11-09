@@ -1,12 +1,14 @@
 from slugify import slugify
-from fastapi import HTTPException  
+from fastapi import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
-from sqlalchemy.orm import Session
 from .. import models, schemas
 
-def create_article(db: Session, article: schemas.ArticleCreate, author_id: int):
+
+async def create_article(db: AsyncSession, article: schemas.ArticleCreate, author_id: int):
     slug = slugify(article.title)
-    if get_article_by_slug(db, slug=slug):
+    if await get_article_by_slug(db, slug=slug):
         raise HTTPException(status_code=409, detail="Slug already exists")
 
     db_article = models.Article(
@@ -15,20 +17,25 @@ def create_article(db: Session, article: schemas.ArticleCreate, author_id: int):
         body=article.body,
         slug=slug,
         author_id=author_id,
+        tags=article.tagList,
     )
     db.add(db_article)
-    db.commit()
-    db.refresh(db_article)
+    await db.commit()
+    await db.refresh(db_article)
     return db_article
 
 
-def get_articles(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Article).offset(skip).limit(limit).all()
+async def get_articles(db: AsyncSession, skip: int = 0, limit: int = 100):
+    result = await db.execute(select(models.Article).offset(skip).limit(limit))
+    return result.scalars().all()
 
-def get_article_by_slug(db: Session, slug: str):
-    return db.query(models.Article).filter(models.Article.slug == slug).first()
 
-def update_article(db: Session, db_article: models.Article, article_in: schemas.ArticleUpdate):
+async def get_article_by_slug(db: AsyncSession, slug: str):
+    result = await db.execute(select(models.Article).filter(models.Article.slug == slug))
+    return result.scalar_one_or_none()
+
+
+async def update_article(db: AsyncSession, db_article: models.Article, article_in: schemas.ArticleUpdate):
     update_data = article_in.model_dump(exclude_unset=True)
     if "title" in update_data:
         db_article.slug = slugify(update_data["title"])
@@ -37,11 +44,11 @@ def update_article(db: Session, db_article: models.Article, article_in: schemas.
         setattr(db_article, field, value)
 
     db.add(db_article)
-    db.commit()
-    db.refresh(db_article)
+    await db.commit()
+    await db.refresh(db_article)
     return db_article
 
 
-def delete_article(db: Session, db_article: models.Article):
-    db.delete(db_article)
-    db.commit()
+async def delete_article(db: AsyncSession, db_article: models.Article):
+    await db.delete(db_article)
+    await db.commit()

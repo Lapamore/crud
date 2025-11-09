@@ -16,5 +16,4 @@ class Article(Base):
 
     author = relationship("User", back_populates="articles")
     comments = relationship("Comment", back_populates="article")
-    # tagList will be handled as a separate table or a string
     tags = sa.Column("tagList", sa.ARRAY(sa.String), nullable=True)

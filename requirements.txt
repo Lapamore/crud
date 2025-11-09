@@ -13,3 +13,5 @@ python-dotenv==1.0.1
 pydantic[email]
 python-slugify==8.0.1
 python-multipart
+asyncpg
+greenlet

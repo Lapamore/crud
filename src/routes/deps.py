@@ -1,27 +1,24 @@
-from typing import Generator
+from typing import AsyncGenerator
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from .. import models, schemas
+from .. import schemas
 from ..config import settings
-from ..database import SessionLocal
+from ..database import AsyncSessionLocal
 from ..services import user as user_service
 from ..services.auth import ALGORITHM
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
 
 
-def get_db() -> Generator:
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
+        yield session
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -35,7 +32,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         token_data = schemas.TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = user_service.get_user_by_username(db, username=token_data.username)
+    user = await user_service.get_user_by_username(db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user

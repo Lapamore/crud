@@ -1,21 +1,24 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
 from .. import models, schemas
 from .auth import get_password_hash
 
 
-def get_user(db: Session, user_id: int):
+async def get_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
 
 
-def get_user_by_email(db: Session, email: str):
-    return db.query(models.User).filter(models.User.email == email).first()
+async def get_user_by_email(db: Session, email: str):
+    result = await db.query(models.User).filter(models.User.email == email)
+    return result.scalar_one_or_none()
 
 
-def get_user_by_username(db: Session, username: str):
-    return db.query(models.User).filter(models.User.username == username).first()
+async def get_user_by_username(db: AsyncSession, username: str):
+    result = await db.execute(select(models.User).filter(models.User.email == email))
+    return result.scalar_one_or_none()
 
-
-def create_user(db: Session, user: schemas.UserCreate):
+async def create_user(db: AsyncSession, user: schemas.UserCreate):
     hashed_password = get_password_hash(user.password)
     db_user = models.User(
         email=user.email,
@@ -25,11 +28,11 @@ def create_user(db: Session, user: schemas.UserCreate):
         image_url=user.image_url,
     )
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    await db.commit()
+    await db.refresh(db_user)
     return db_user
 
-def update_user(db: Session, db_user: models.User, user_in: schemas.UserUpdate):
+async def update_user(db: AsyncSession, db_user: models.User, user_in: schemas.UserUpdate):
     update_data = user_in.model_dump(exclude_unset=True)
     if "password" in update_data:
         hashed_password = get_password_hash(update_data["password"])
@@ -40,6 +43,6 @@ def update_user(db: Session, db_user: models.User, user_in: schemas.UserUpdate):
         setattr(db_user, field, value)
 
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    await db.commit()
+    await db.refresh(db_user)
     return db_user

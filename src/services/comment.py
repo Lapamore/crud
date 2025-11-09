@@ -1,27 +1,32 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
 from .. import models, schemas
 
 
-def create_comment(db: Session, comment: schemas.CommentCreate, article_id: int, author_id: int):
+async def create_comment(db: AsyncSession, comment: schemas.CommentCreate, article_id: int, author_id: int):
     db_comment = models.Comment(
         **comment.model_dump(),
         article_id=article_id,
         author_id=author_id
     )
     db.add(db_comment)
-    db.commit()
-    db.refresh(db_comment)
+    await db.commit()
+    await db.refresh(db_comment)
     return db_comment
 
 
-def get_comments_by_article_slug(db: Session, slug: str):
-    return db.query(models.Comment).join(models.Article).filter(models.Article.slug == slug).all()
+async def get_comments_by_article_slug(db: AsyncSession, slug: str):
+    query = select(models.Comment).join(models.Article).filter(models.Article.slug == slug)
+    result = await db.execute(query)
+    return result.scalars().all()
 
 
-def get_comment(db: Session, comment_id: int):
-    return db.query(models.Comment).filter(models.Comment.id == comment_id).first()
+async def get_comment(db: AsyncSession, comment_id: int):
+    result = await db.execute(select(models.Comment).filter(models.Comment.id == comment_id))
+    return result.scalar_one_or_none()
 
 
-def delete_comment(db: Session, db_comment: models.Comment):
-    db.delete(db_comment)
-    db.commit()
+async def delete_comment(db: AsyncSession, db_comment: models.Comment):
+    await db.delete(db_comment)
+    await db.commit()
