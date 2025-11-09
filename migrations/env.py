@@ -9,11 +9,10 @@ from sqlalchemy import pool
 from alembic import context
 
 # Add the project root to the Python path
-sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.models import Base
 from src.config import settings
-
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
