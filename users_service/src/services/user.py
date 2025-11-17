@@ -6,7 +6,9 @@ from ..services.auth import get_password_hash
 
 
 async def get_user(db: AsyncSession, user_id: int):
-    return db.query(models.User).filter(models.User.id == user_id).first()
+    query = select(models.User).where(models.User.id == user_id)
+    result = await db.execute(query)
+    return result.scalar_one_or_none()
 
 
 async def get_user_by_email(db: AsyncSession, email: str):
