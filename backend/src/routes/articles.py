@@ -35,7 +35,7 @@ async def update_article(
     slug: str,
     article_in: schemas.ArticleUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthenticatedUser = Depends(get_current_user) # <-- Тип верный
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     db_article = await article_service.get_article_by_slug(db, slug=slug)
     if db_article is None:
@@ -49,7 +49,7 @@ async def update_article(
 async def delete_article(
     slug: str,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthenticatedUser = Depends(get_current_user) # <-- ИСПРАВЛЕНО ЗДЕСЬ
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     db_article = await article_service.get_article_by_slug(db, slug=slug)
     if db_article is None:
