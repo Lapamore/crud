@@ -1,10 +1,12 @@
 from fastapi import FastAPI
 from .routes import users
+import os
 
 app = FastAPI(
     title="Users API",
     description="A separate service for managing users.",
-    version="1.0.0"
+    version="1.0.0",
+    root_path=os.getenv("ROOT_PATH", "")
 )
 
 @app.get("/api")

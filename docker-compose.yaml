@@ -38,6 +38,8 @@ services:
     container_name: backend
     env_file:
       - ./backend/.env
+    environment:
+      - ROOT_PATH=
     depends_on:
       db-main:
         condition: service_healthy
@@ -49,6 +51,8 @@ services:
     container_name: users-api
     env_file:
       - ./users_service/.env
+    environment:
+      - ROOT_PATH=/users
     depends_on:
       db-users:
         condition: service_healthy

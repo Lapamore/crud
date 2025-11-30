@@ -2,13 +2,15 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+import os
 
 from .routes import articles, comments
 
 app = FastAPI(
     title="Blog Platform API",
     description="A simple blog platform API.",
-    version="1.0.0"
+    version="1.0.0",
+    root_path=os.getenv("ROOT_PATH", "")
 )
 
 @app.exception_handler(StarletteHTTPException)
