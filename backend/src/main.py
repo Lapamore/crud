@@ -4,7 +4,8 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
 
-from .routes import articles, comments
+from .modules.articles.api import router as articles_router
+from .modules.comments.api import router as comments_router
 
 app = FastAPI(
     title="Blog Platform API",
@@ -35,5 +36,5 @@ async def health_check():
 def read_root():
     return {"message": "Welcome to the Blog API"}
 
-app.include_router(articles.router, prefix="/api", tags=["Articles"])
-app.include_router(comments.router, prefix="/api", tags=["Comments"])
+app.include_router(articles_router, prefix="/api", tags=["Articles"])
+app.include_router(comments_router, prefix="/api", tags=["Comments"])

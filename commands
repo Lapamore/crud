@@ -10,7 +10,7 @@ docker stop $(docker ps -a -q)
 docker system prune -a
 docker-compose up --build -d
 
-docker-compose exec users-api alembic revision --autogenerate -m "Create users table"
+docker-compose exec users-api alembic revision --autogenerate -m "Create users table" && docker-compose exec backend alembic revision --autogenerate -m "Create articles and comments tables"
 
 # Для основного сервиса
 docker-compose exec backend alembic revision --autogenerate -m "Create articles and comments tables"

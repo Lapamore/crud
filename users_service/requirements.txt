@@ -6,6 +6,7 @@ alembic
 pydantic-settings
 python-slugify
 passlib[bcrypt]
+bcrypt==4.0.1
 python-jose[cryptography]
 greenlet
 pydantic[email]
