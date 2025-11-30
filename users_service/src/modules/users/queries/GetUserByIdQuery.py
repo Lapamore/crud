@@ -1,6 +1,7 @@
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(frozen=True)
-class GetUserByIdQuery:
+class GetUserByIdQuery(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     user_id: int

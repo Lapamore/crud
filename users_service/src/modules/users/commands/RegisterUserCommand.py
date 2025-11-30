@@ -1,9 +1,10 @@
-from dataclasses import dataclass
 from typing import Optional
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(frozen=True)
-class RegisterUserCommand:
+class RegisterUserCommand(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     email: str
     username: str
     password: str

@@ -1,9 +1,10 @@
-from dataclasses import dataclass
 from typing import Optional
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(frozen=True)
-class UserDTO:
+class UserDTO(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     id: int
     email: str
     username: str

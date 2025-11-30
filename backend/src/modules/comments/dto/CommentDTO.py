@@ -1,9 +1,10 @@
-from dataclasses import dataclass
 from typing import Optional
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(frozen=True)
-class CommentDTO:
+class CommentDTO(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     id: int
     body: str
     article_id: int

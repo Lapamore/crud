@@ -1,9 +1,10 @@
-from dataclasses import dataclass
 from typing import Optional
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(frozen=True)
-class UpdateUserCommand:
+class UpdateUserCommand(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     user_id: int
     email: Optional[str] = None
     username: Optional[str] = None

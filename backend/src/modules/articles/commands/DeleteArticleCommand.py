@@ -1,7 +1,8 @@
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(frozen=True)
-class DeleteArticleCommand:
+class DeleteArticleCommand(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     slug: str
     user_id: int

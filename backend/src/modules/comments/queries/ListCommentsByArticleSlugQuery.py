@@ -1,6 +1,7 @@
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(frozen=True)
-class ListCommentsByArticleSlugQuery:
+class ListCommentsByArticleSlugQuery(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     slug: str

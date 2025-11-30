@@ -1,9 +1,10 @@
-from dataclasses import dataclass
 from typing import Optional, List
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(frozen=True)
-class UpdateArticleCommand:
+class UpdateArticleCommand(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     slug: str
     user_id: int
     title: Optional[str] = None

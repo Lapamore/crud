@@ -1,7 +1,8 @@
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(frozen=True)
-class DeleteCommentCommand:
+class DeleteCommentCommand(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     comment_id: int
     user_id: int

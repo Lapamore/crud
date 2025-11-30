@@ -1,9 +1,10 @@
-from dataclasses import dataclass
 from typing import Optional, List
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(frozen=True)
-class ArticleDTO:
+class ArticleDTO(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     id: int
     slug: str
     title: str

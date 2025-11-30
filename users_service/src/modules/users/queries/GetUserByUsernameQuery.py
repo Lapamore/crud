@@ -1,6 +1,7 @@
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 
 
-@dataclass(frozen=True)
-class GetUserByUsernameQuery:
+class GetUserByUsernameQuery(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     username: str
