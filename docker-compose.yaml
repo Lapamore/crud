@@ -1,6 +1,6 @@
 services:
   db-main:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: db-main
     environment:
       - POSTGRES_USER=app_user
@@ -8,6 +8,8 @@ services:
       - POSTGRES_DB=main_db
     volumes:
       - db_main_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     networks:
       - internal
     healthcheck:
@@ -17,7 +19,7 @@ services:
       retries: 5
 
   db-users:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: db-users
     environment:
       - POSTGRES_USER=app_user
@@ -25,6 +27,8 @@ services:
       - POSTGRES_DB=users_db
     volumes:
       - db_users_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     networks:
       - internal
     healthcheck:
@@ -40,15 +44,25 @@ services:
       - ./backend/.env
     environment:
       - ROOT_PATH=
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/alembic.ini:/app/alembic.ini
+      - ./backend/migrations:/app/migrations
     depends_on:
       db-main:
         condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - internal
 
   users-api:
     build: ./users_service
     container_name: users-api
+    volumes:
+      - ./users_service/src:/app/src
+      - ./users_service/alembic.ini:/app/alembic.ini
+      - ./users_service/migrations:/app/migrations
     env_file:
       - ./users_service/.env
     environment:
@@ -69,6 +83,37 @@ services:
       - users-api
     ports:
       - "80:80"
+    networks:
+      - internal
+
+  redis:
+    ports:
+      - "6379:6379"
+    image: redis:7-alpine
+    container_name: redis
+    networks:
+      - internal
+
+  push-notificator:
+    image: ghcr.io/ayusavin/push-notification-playground:1.0.0
+    container_name: push-notificator
+    ports:
+      - "8000:8000"
+    networks:
+      - internal
+
+  worker:
+    volumes:
+      - ./worker:/app
+    build: ./worker
+    container_name: worker
+    env_file:
+      - ./worker/.env
+    depends_on:
+      - redis
+      - push-notificator
+      - db-users
+      - db-main
     networks:
       - internal
 

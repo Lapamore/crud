@@ -1,8 +1,9 @@
-from typing import Optional
 from ..queries.GetArticleBySlugQuery import GetArticleBySlugQuery
 from ..repositories.core.IArticleReadRepository import IArticleReadRepository
 from ..dto.ArticleDTO import ArticleDTO
 from ..exceptions.ArticleNotFoundException import ArticleNotFoundException
+
+__all__ = ["GetArticleBySlugHandler"]
 
 
 class GetArticleBySlugHandler:

@@ -41,3 +41,10 @@ def read_root():
 
 
 app.include_router(users_router, prefix="/api", tags=["Users"])
+
+@app.on_event("startup")
+async def startup_event():
+    print("Listing all routes:")
+    for route in app.routes:
+        if hasattr(route, "path"):
+            print(f"Route: {route.path} {route.methods}")

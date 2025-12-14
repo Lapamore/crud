@@ -3,6 +3,8 @@ from ..repositories.core.IArticleWriteRepository import IArticleWriteRepository
 from ..exceptions.ArticleNotFoundException import ArticleNotFoundException
 from ..exceptions.NotAuthorizedToModifyArticleException import NotAuthorizedToModifyArticleException
 
+__all__ = ["DeleteArticleHandler"]
+
 
 class DeleteArticleHandler:
     def __init__(self, repository: IArticleWriteRepository):

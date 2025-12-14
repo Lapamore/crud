@@ -1,22 +1,25 @@
 from typing import AsyncGenerator
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from celery import Celery
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, status
 
 from ..config import settings
 from ..database import AsyncSessionLocal
-from .auth import AuthenticatedUser
+
+from src.core.tasker.impl.CeleryTaskProducer import CeleryTaskProducer
+from src.core.tasker.core.ITaskProducer import ITaskProducer
+from src.core.schemas.AuthenticatedUser import AuthenticatedUser
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session
-
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
-
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> AuthenticatedUser:
     credentials_exception = HTTPException(
@@ -33,3 +36,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> Authenticated
         raise credentials_exception
 
     return AuthenticatedUser(id=user_id, username=payload.get("sub"))
+
+def get_task_producer() -> ITaskProducer:
+    celery_app = Celery(
+        "backend",
+        broker=settings.REDIS_URL
+    )
+
+    return CeleryTaskProducer(celery_app)

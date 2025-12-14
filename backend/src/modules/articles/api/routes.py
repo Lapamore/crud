@@ -3,7 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import schemas
-from src.core import get_db, get_current_user, AuthenticatedUser
+from src.core.tasker.core import ITaskProducer
+from src.core.deps import get_db, get_current_user, get_task_producer
+from src.core.schemas.AuthenticatedUser import AuthenticatedUser    
 from ..commands import CreateArticleCommand, UpdateArticleCommand, DeleteArticleCommand
 from ..queries import GetArticleBySlugQuery, ListArticlesQuery
 from ..handlers import (
@@ -27,10 +29,11 @@ router = APIRouter()
 async def create_article(
     article: schemas.ArticleCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    task_producer: ITaskProducer = Depends(get_task_producer)
 ):
     repository = SqlAlchemyArticleWriteRepository(db)
-    handler = CreateArticleHandler(repository)
+    handler = CreateArticleHandler(repository, task_producer)
     
     command = CreateArticleCommand(
         title=article.title,

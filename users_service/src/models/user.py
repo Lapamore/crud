@@ -11,3 +11,5 @@ class User(Base):
     hashed_password = sa.Column(sa.String, nullable=False)
     bio = sa.Column(sa.String, nullable=True)
     image_url = sa.Column(sa.String, nullable=True)
+    subscription_key = sa.Column(sa.String, nullable=True)
+

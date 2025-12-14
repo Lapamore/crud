@@ -4,21 +4,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import schemas
 from src.core import get_db, get_current_user
-from ..commands import RegisterUserCommand, UpdateUserCommand, LoginCommand
+from ..commands import RegisterUserCommand, UpdateUserCommand, LoginCommand, UpdateSubscriptionKeyCommand, SubscribeCommand
 from ..queries import GetUserByIdQuery
 from ..handlers import (
     RegisterUserHandler,
     UpdateUserHandler,
     LoginHandler,
     GetUserByIdHandler,
+    UpdateSubscriptionKeyHandler,
+    SubscribeHandler,
 )
-from ..repositories.impl import SqlAlchemyUserWriteRepository, SqlAlchemyUserReadRepository
+from ..repositories.impl import SqlAlchemyUserWriteRepository, SqlAlchemyUserReadRepository, SqlAlchemySubscriberWriteRepository
 from ..exceptions import (
     EmailAlreadyExistsException,
     UsernameAlreadyExistsException,
     InvalidCredentialsException,
 )
-from ..dto import UserDTO
+from ..dto import UserDTO, SubscriptionKeyDTO, SubscribeDTO
 
 router = APIRouter()
 
@@ -128,6 +130,44 @@ async def update_current_user(
     read_repo = SqlAlchemyUserReadRepository(db)
     updated_user = await read_repo.find_by_id(current_user.id)
     return _dto_to_response(updated_user)
+
+
+@router.put("/users/me/subscription-key", response_model=schemas.UserResponse)
+async def update_subscription_key(
+    key_data: SubscriptionKeyDTO,
+    current_user: UserDTO = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    repository = SqlAlchemyUserWriteRepository(db)
+    handler = UpdateSubscriptionKeyHandler(repository)
+    
+    command = UpdateSubscriptionKeyCommand(
+        user_id=current_user.id,
+        subscription_key=key_data.subscription_key
+    )
+    
+    await handler.handle(command)
+    
+    read_repo = SqlAlchemyUserReadRepository(db)
+    updated_user = await read_repo.find_by_id(current_user.id)
+    return _dto_to_response(updated_user)
+
+
+@router.post("/users/subscribe", status_code=status.HTTP_204_NO_CONTENT)
+async def subscribe_user(
+    subscribe_data: SubscribeDTO,
+    current_user: UserDTO = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    repository = SqlAlchemySubscriberWriteRepository(db)
+    handler = SubscribeHandler(repository)
+    
+    command = SubscribeCommand(
+        subscriber_id=current_user.id,
+        target_user_id=subscribe_data.target_user_id
+    )
+    
+    await handler.handle(command)
 
 
 def _dto_to_response(dto: UserDTO) -> dict:

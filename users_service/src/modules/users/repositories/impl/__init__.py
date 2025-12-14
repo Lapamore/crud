@@ -1,4 +1,5 @@
 from .SqlAlchemyUserReadRepository import SqlAlchemyUserReadRepository
 from .SqlAlchemyUserWriteRepository import SqlAlchemyUserWriteRepository
+from .SqlAlchemySubscriberWriteRepository import SqlAlchemySubscriberWriteRepository
 
-__all__ = ["SqlAlchemyUserReadRepository", "SqlAlchemyUserWriteRepository"]
+__all__ = ["SqlAlchemyUserReadRepository", "SqlAlchemyUserWriteRepository", "SqlAlchemySubscriberWriteRepository"]

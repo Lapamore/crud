@@ -89,3 +89,11 @@ class SqlAlchemyUserWriteRepository(IUserWriteRepository):
         result = await self._session.execute(query)
         user = result.scalar_one_or_none()
         return self._to_dto(user) if user else None
+
+    async def update_subscription_key(self, user_id: int, subscription_key: str) -> None:
+        stmt = select(User).where(User.id == user_id)
+        result = await self._session.execute(stmt)
+        user = result.scalar_one_or_none()
+        if user:
+            user.subscription_key = subscription_key
+            await self._session.commit()

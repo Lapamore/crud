@@ -1,6 +1,6 @@
 """initial
 
-Revision ID: 0001
+Revision ID: a1b2c3d4e5f6
 Revises: 
 Create Date: 2025-11-30
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0001'
+revision: str = 'a1b2c3d4e5f6'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

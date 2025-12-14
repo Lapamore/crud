@@ -4,6 +4,8 @@ from .LoginHandler import LoginHandler
 from .GetUserByIdHandler import GetUserByIdHandler
 from .GetUserByEmailHandler import GetUserByEmailHandler
 from .GetUserByUsernameHandler import GetUserByUsernameHandler
+from .UpdateSubscriptionKeyHandler import UpdateSubscriptionKeyHandler
+from .SubscribeHandler import SubscribeHandler
 
 __all__ = [
     "RegisterUserHandler",
@@ -12,4 +14,6 @@ __all__ = [
     "GetUserByIdHandler",
     "GetUserByEmailHandler",
     "GetUserByUsernameHandler",
+    "UpdateSubscriptionKeyHandler",
+    "SubscribeHandler"
 ]

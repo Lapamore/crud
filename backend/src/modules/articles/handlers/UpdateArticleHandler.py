@@ -4,6 +4,8 @@ from ..repositories.core.IArticleWriteRepository import IArticleWriteRepository
 from ..exceptions.ArticleNotFoundException import ArticleNotFoundException
 from ..exceptions.NotAuthorizedToModifyArticleException import NotAuthorizedToModifyArticleException
 
+__all__ = ["UpdateArticleHandler"]
+
 
 class UpdateArticleHandler:
     def __init__(self, repository: IArticleWriteRepository):

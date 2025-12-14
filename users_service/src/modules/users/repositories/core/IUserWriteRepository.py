@@ -6,6 +6,11 @@ from ...dto import UserDTO
 
 class IUserWriteRepository(ABC):
     @abstractmethod
+    async def update_subscription_key(self, user_id: int, subscription_key: str) -> None:
+        """Updates the subscription key for a user."""
+        pass
+
+    @abstractmethod
     async def create(
         self,
         email: str,

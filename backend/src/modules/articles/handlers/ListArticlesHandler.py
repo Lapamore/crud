@@ -3,6 +3,8 @@ from ..queries.ListArticlesQuery import ListArticlesQuery
 from ..repositories.core.IArticleReadRepository import IArticleReadRepository
 from ..dto.ArticleDTO import ArticleDTO
 
+__all__ = ["ListArticlesHandler"]
+
 
 class ListArticlesHandler:
     def __init__(self, repository: IArticleReadRepository):
