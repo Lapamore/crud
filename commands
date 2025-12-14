@@ -6,11 +6,17 @@ docker-compose exec app alembic revision --autogenerate -m "Initial migration"
 docker-compose exec app alembic upgrade head
 
 
-docker stop $(docker ps -a -q)
+docker stop $(docker ps -a -q) && docker system prune -a && docker-compose up --build -d
 docker system prune -a
 docker-compose up --build -d
 
 docker-compose exec users-api alembic revision --autogenerate -m "Create users table" && docker-compose exec backend alembic revision --autogenerate -m "Create articles and comments tables"
+
+Открыл оба Swagger UI:
+
+Backend (Articles, Comments): http://localhost/docs
+Users Service: http://localhost/users/docs
+
 
 # Для основного сервиса
 docker-compose exec backend alembic revision --autogenerate -m "Create articles and comments tables"
