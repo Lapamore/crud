@@ -1,4 +1,3 @@
-from models.User import User
-from database import Base
+from .User import User
 
-__all__ = ["User", "Base"]
+__all__ = ["User"]
