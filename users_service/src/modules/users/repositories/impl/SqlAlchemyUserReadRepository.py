@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 
 from ..core import IUserReadRepository
 from ...dto import UserDTO
-from models.User import User
+from src.models.User import User
 
 
 class SqlAlchemyUserReadRepository(IUserReadRepository):
