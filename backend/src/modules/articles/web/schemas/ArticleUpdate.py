@@ -1,6 +1,8 @@
 from typing import Optional, List
 from pydantic import BaseModel
 
+__all__ = ["ArticleUpdate"]
+
 
 class ArticleUpdate(BaseModel):
     title: Optional[str] = None

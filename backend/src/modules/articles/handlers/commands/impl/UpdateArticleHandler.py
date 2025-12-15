@@ -1,15 +1,18 @@
 from slugify import slugify
-from ..commands.UpdateArticleCommand import UpdateArticleCommand
-from ..repositories.core.IArticleWriteRepository import IArticleWriteRepository
-from ..exceptions.ArticleNotFoundException import ArticleNotFoundException
-from ..exceptions.NotAuthorizedToModifyArticleException import NotAuthorizedToModifyArticleException
+
+from ..core import IUpdateArticleHandler
+from ....models.commands import UpdateArticleCommand
+from ....exceptions import ArticleNotFoundException, NotAuthorizedToModifyArticleException
+from ....repositories.core import IArticleWriteRepository
+
+__all__ = ["UpdateArticleHandler"]
 
 
-class UpdateArticleHandler:
+class UpdateArticleHandler(IUpdateArticleHandler):
     def __init__(self, repository: IArticleWriteRepository):
         self._repository = repository
 
-    async def handle(self, command: UpdateArticleCommand) -> int:
+    async def __call__(self, command: UpdateArticleCommand) -> int:
         article = await self._repository.find_by_slug(command.slug)
         
         if article is None:

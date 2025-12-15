@@ -1,5 +1,7 @@
 from .ArticleBase import ArticleBase
 
+__all__ = ["ArticleResponse"]
+
 
 class ArticleResponse(ArticleBase):
     id: int

@@ -12,9 +12,15 @@ from ..models.commands import (
 
 from ..models.queries import (
     GetArticleBySlugQuery,
-    ListArticlesQuery
+    ListArticlesQuery,
 )
 
+from .schemas import (
+    ArticleResponse,
+    ArticleCreate,
+    ArticleResponse,
+    ArticleUpdate,
+)
 from ..handlers import (
     CreateArticleHandler,
     UpdateArticleHandler,
@@ -22,7 +28,7 @@ from ..handlers import (
     GetArticleBySlugHandler,
     ListArticlesHandler,
 )
-from ..repositories.impl import SqlAlchemyArticleWriteRepository, ArticleReadRepository
+from ..repositories.impl import ArticleWriteRepository, ArticleReadRepository
 from ..exceptions import (
     SlugAlreadyExistsException,
     ArticleNotFoundException,
@@ -31,37 +37,7 @@ from ..exceptions import (
 
 router = APIRouter()
 
-
-@router.post("/articles", response_model=schemas.ArticleResponse, status_code=status.HTTP_201_CREATED)
-async def create_article(
-    article: schemas.ArticleCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: AuthenticatedUser = Depends(get_current_user)
-):
-    repository = SqlAlchemyArticleWriteRepository(db)
-    handler = CreateArticleHandler(repository)
-    
-    command = CreateArticleCommand(
-        title=article.title,
-        description=article.description,
-        body=article.body,
-        author_id=current_user.id,
-        tag_list=article.tagList,
-    )
-    
-    try:
-        article_id = await handler.handle(command)
-    except SlugAlreadyExistsException:
-        raise HTTPException(status_code=409, detail="Slug already exists")
-    
-    read_repository = ArticleReadRepository(db)
-    query_handler = GetArticleBySlugHandler(read_repository)
-    
-    result = await read_repository.find_by_slug(command.title.lower().replace(" ", "-"))
-    return result
-
-
-@router.get("/articles", response_model=List[schemas.ArticleResponse])
+@router.get("/articles", response_model=List[ArticleResponse])
 async def list_articles(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
@@ -87,7 +63,7 @@ async def list_articles(
     ]
 
 
-@router.get("/articles/{slug}", response_model=schemas.ArticleResponse)
+@router.get("/articles/{slug}", response_model=ArticleResponse)
 async def get_article(slug: str, db: AsyncSession = Depends(get_db)):
     repository = ArticleReadRepository(db)
     handler = GetArticleBySlugHandler(repository)
@@ -110,14 +86,14 @@ async def get_article(slug: str, db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.put("/articles/{slug}", response_model=schemas.ArticleResponse)
+@router.put("/articles/{slug}", response_model=ArticleResponse)
 async def update_article(
     slug: str,
-    article_in: schemas.ArticleUpdate,
+    article_in: ArticleUpdate,
     db: AsyncSession = Depends(get_db),
     current_user: AuthenticatedUser = Depends(get_current_user)
 ):
-    repository = SqlAlchemyArticleWriteRepository(db)
+    repository = ArticleWriteRepository(db)
     handler = UpdateArticleHandler(repository)
     
     command = UpdateArticleCommand(
@@ -149,7 +125,7 @@ async def delete_article(
     db: AsyncSession = Depends(get_db),
     current_user: AuthenticatedUser = Depends(get_current_user)
 ):
-    repository = SqlAlchemyArticleWriteRepository(db)
+    repository = ArticleWriteRepository(db)
     handler = DeleteArticleHandler(repository)
     
     command = DeleteArticleCommand(slug=slug, user_id=current_user.id)

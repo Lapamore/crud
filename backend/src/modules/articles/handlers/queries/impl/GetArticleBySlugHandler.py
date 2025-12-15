@@ -1,5 +1,6 @@
 from ....dto import ArticleDTO
 from ....exceptions import ArticleNotFoundException
+from ....models.queries import GetArticleBySlugQuery
 from ....repositories.core import IArticleReadRepository
 
 __all__ = ["GetArticleBySlugHandler"]

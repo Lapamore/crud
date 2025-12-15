@@ -1,15 +1,19 @@
 from slugify import slugify
-from src.models.Article import Article
-from ..commands.CreateArticleCommand import CreateArticleCommand
-from ..repositories.core.IArticleWriteRepository import IArticleWriteRepository
-from ..exceptions.SlugAlreadyExistsException import SlugAlreadyExistsException
+
+from models import Article
+from ..core import ICreateArticleHandler
+from ....models.commands import CreateArticleCommand
+from ....exceptions import SlugAlreadyExistsException
+from ....repositories.core import IArticleWriteRepository
+
+__all__ = ["CreateArticleHandler"]
 
 
-class CreateArticleHandler:
+class CreateArticleHandler(ICreateArticleHandler):
     def __init__(self, repository: IArticleWriteRepository):
         self._repository = repository
 
-    async def handle(self, command: CreateArticleCommand) -> int:
+    async def __call__(self, command: CreateArticleCommand) -> int:
         slug = slugify(command.title)
         
         if await self._repository.find_by_slug(slug):
@@ -25,4 +29,4 @@ class CreateArticleHandler:
         )
         
         saved_article = await self._repository.save(article)
-        return saved_article.id
+        command.id = saved_article.id

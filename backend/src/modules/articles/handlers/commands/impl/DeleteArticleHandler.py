@@ -1,14 +1,17 @@
-from ..commands.DeleteArticleCommand import DeleteArticleCommand
-from ..repositories.core.IArticleWriteRepository import IArticleWriteRepository
-from ..exceptions.ArticleNotFoundException import ArticleNotFoundException
-from ..exceptions.NotAuthorizedToModifyArticleException import NotAuthorizedToModifyArticleException
+from ..core import IDeleteArticleHandler
+from ....models.commands import DeleteArticleCommand
+from ....exceptions import ArticleNotFoundException, NotAuthorizedToModifyArticleException
+from ....repositories.core import IArticleWriteRepository
+
+__all__ = ["DeleteArticleHandler"]
 
 
-class DeleteArticleHandler:
+
+class DeleteArticleHandler(IDeleteArticleHandler):
     def __init__(self, repository: IArticleWriteRepository):
         self._repository = repository
 
-    async def handle(self, command: DeleteArticleCommand) -> None:
+    async def __call__(self, command: DeleteArticleCommand) -> None:
         article = await self._repository.find_by_slug(command.slug)
         
         if article is None:
