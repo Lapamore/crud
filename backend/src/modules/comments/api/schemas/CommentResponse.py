@@ -1,4 +1,6 @@
-from .CommentBase import CommentBase
+from CommentBase import CommentBase
+
+__all__ = ["CommentResponse"]
 
 
 class CommentResponse(CommentBase):

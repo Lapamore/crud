@@ -12,7 +12,7 @@ from .repositories import (
     IArticleWriteRepository,
     IArticleReadRepository,
     SqlAlchemyArticleWriteRepository,
-    SqlAlchemyArticleReadRepository,
+    ArticleReadRepository,
 )
 from .exceptions import (
     SlugAlreadyExistsException,
@@ -36,7 +36,7 @@ __all__ = [
     "IArticleWriteRepository",
     "IArticleReadRepository",
     "SqlAlchemyArticleWriteRepository",
-    "SqlAlchemyArticleReadRepository",
+    "ArticleReadRepository",
     "SlugAlreadyExistsException",
     "ArticleNotFoundException",
     "NotAuthorizedToModifyArticleException",

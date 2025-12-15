@@ -1,11 +1,20 @@
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from . import schemas
-from src.core import get_db, get_current_user, AuthenticatedUser
-from ..commands import CreateArticleCommand, UpdateArticleCommand, DeleteArticleCommand
-from ..queries import GetArticleBySlugQuery, ListArticlesQuery
+from core import get_db, get_current_user, AuthenticatedUser
+from ..models.commands import (
+    CreateArticleCommand, 
+    UpdateArticleCommand,
+    DeleteArticleCommand
+)
+
+from ..models.queries import (
+    GetArticleBySlugQuery,
+    ListArticlesQuery
+)
+
 from ..handlers import (
     CreateArticleHandler,
     UpdateArticleHandler,
@@ -13,7 +22,7 @@ from ..handlers import (
     GetArticleBySlugHandler,
     ListArticlesHandler,
 )
-from ..repositories.impl import SqlAlchemyArticleWriteRepository, SqlAlchemyArticleReadRepository
+from ..repositories.impl import SqlAlchemyArticleWriteRepository, ArticleReadRepository
 from ..exceptions import (
     SlugAlreadyExistsException,
     ArticleNotFoundException,
@@ -45,7 +54,7 @@ async def create_article(
     except SlugAlreadyExistsException:
         raise HTTPException(status_code=409, detail="Slug already exists")
     
-    read_repository = SqlAlchemyArticleReadRepository(db)
+    read_repository = ArticleReadRepository(db)
     query_handler = GetArticleBySlugHandler(read_repository)
     
     result = await read_repository.find_by_slug(command.title.lower().replace(" ", "-"))
@@ -58,7 +67,7 @@ async def list_articles(
     skip: int = 0,
     limit: int = 100
 ):
-    repository = SqlAlchemyArticleReadRepository(db)
+    repository = ArticleReadRepository(db)
     handler = ListArticlesHandler(repository)
     
     query = ListArticlesQuery(skip=skip, limit=limit)
@@ -80,7 +89,7 @@ async def list_articles(
 
 @router.get("/articles/{slug}", response_model=schemas.ArticleResponse)
 async def get_article(slug: str, db: AsyncSession = Depends(get_db)):
-    repository = SqlAlchemyArticleReadRepository(db)
+    repository = ArticleReadRepository(db)
     handler = GetArticleBySlugHandler(repository)
     
     query = GetArticleBySlugQuery(slug=slug)
@@ -127,7 +136,7 @@ async def update_article(
     except NotAuthorizedToModifyArticleException:
         raise HTTPException(status_code=403, detail="Not authorized to update this article")
     
-    read_repository = SqlAlchemyArticleReadRepository(db)
+    read_repository = ArticleReadRepository(db)
     updated_article = await read_repository.find_by_slug(
         command.title.lower().replace(" ", "-") if command.title else slug
     )

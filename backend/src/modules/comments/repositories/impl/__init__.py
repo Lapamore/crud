@@ -1,4 +1,2 @@
-from .SqlAlchemyCommentWriteRepository import SqlAlchemyCommentWriteRepository
-from .SqlAlchemyCommentReadRepository import SqlAlchemyCommentReadRepository
-
-__all__ = ["SqlAlchemyCommentWriteRepository", "SqlAlchemyCommentReadRepository"]
+from .CommentWriteRepository import CommentWriteRepository
+from .CommentReadRepository import CommentReadRepository

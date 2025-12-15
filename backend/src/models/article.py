@@ -1,6 +1,9 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
-from ..database import Base
+
+from database import Base
+
+__all__ = ["Article"]
 
 
 class Article(Base):
