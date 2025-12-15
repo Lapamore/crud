@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
 
-from .modules.users.api import router as users_router
+from modules.users.api import router as users_router
 
 app = FastAPI(
     title="Users API",
