@@ -4,16 +4,27 @@ from ....exceptions import (
     NotAuthorizedToDeleteCommentException
 )
 from ..core import IDeleteCommentHandler
-from comments.repositories.core import ICommentWriteRepository
+from modules.comments.repositories.core import ICommentWriteRepository
+from modules.articles.repositories.core import IArticleReadRepository
+from modules.articles.exceptions import ArticleNotFoundException
 
 __all__ = ["DeleteCommentHandler"]
 
 
 class DeleteCommentHandler(IDeleteCommentHandler):
-    def __init__(self, repository: ICommentWriteRepository):
+    def __init__(
+        self, 
+        repository: ICommentWriteRepository,
+        article_repository: IArticleReadRepository
+    ):
         self._repository = repository
+        self._article_repository = article_repository
 
-    async def handle(self, command: DeleteCommentCommand) -> None:
+    async def __call__(self, command: DeleteCommentCommand) -> None:
+        article = await self._article_repository.find_by_slug(command.slug)
+        if article is None:
+            raise ArticleNotFoundException(command.slug)
+
         comment = await self._repository.find_by_id(command.comment_id)
         
         if comment is None:

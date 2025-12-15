@@ -11,6 +11,6 @@ class GetListArticlesHandler:
     def __init__(self, repository: IArticleReadRepository):
         self._repository = repository
 
-    async def handle(self, query: ListArticlesQuery) -> List[ArticleDTO]:
+    async def __call__(self, query: ListArticlesQuery) -> List[ArticleDTO]:
         articles = await self._repository.find_all(query.skip, query.limit)
-        return [Article.model_validate(article) for article in articles]
+        return [ArticleDTO.model_validate(article) for article in articles]

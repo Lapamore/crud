@@ -1,18 +1,18 @@
 from dishka import Provider, Scope
 
-from handlers.commands.core import ICreateArticleHandler, IDeleteArticleHandler, IUpdateArticleHandler
-from handlers.commands.impl import CreateArticleHandler, DeleteArticleHandler, UpdateArticleHandler
+from .handlers.commands.core import ICreateArticleHandler, IDeleteArticleHandler, IUpdateArticleHandler
+from .handlers.commands.impl import CreateArticleHandler, DeleteArticleHandler, UpdateArticleHandler
 
-from handlers.queries.core import IGetArticleBySlugHandler, IGetListArticlesHandler
-from handlers.queries.impl import GetArticleBySlugHandler, GetListArticlesHandler
+from .handlers.queries.core import IGetArticleBySlugHandler, IGetListArticlesHandler
+from .handlers.queries.impl import GetArticleBySlugHandler, GetListArticlesHandler
 
-from repositories.core import IArticleReadRepository, IArticleWriteRepository
-from repositories.impl import ArticleReadRepository, ArticleWriteRepository
+from .repositories.core import IArticleReadRepository, IArticleWriteRepository
+from .repositories.impl import ArticleReadRepository, ArticleWriteRepository
 
 __all__ = ["ArcticlesApp"]
 
 
-class ArcticlesApp:
+class ArticlesApp:
     def __call__(self) -> Provider:
         provider = Provider(scope=Scope.REQUEST)
         

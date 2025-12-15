@@ -1,4 +1,2 @@
-from .ArticleWriteRepository import SqlAlchemyArticleWriteRepository
+from .ArticleWriteRepository import ArticleWriteRepository
 from .ArticleReadRepository import ArticleReadRepository
-
-__all__ = ["ArticleWriteRepository", "ArticleReadRepository"]

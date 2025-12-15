@@ -11,7 +11,7 @@ class GetCommentByIdHandler(IGetCommentByIdHandler):
     def __init__(self, repository: ICommentReadRepository):
         self._repository = repository
 
-    async def handle(self, query: GetCommentByIdQuery) -> CommentDTO:
+    async def __call__(self, query: GetCommentByIdQuery) -> CommentDTO:
         comment = await self._repository.find_by_id(query.comment_id)
         
         if comment is None:

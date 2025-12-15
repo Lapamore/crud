@@ -7,5 +7,5 @@ class CreateCommentCommand(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     body: str
-    article_id: int
+    article_slug: str
     author_id: int

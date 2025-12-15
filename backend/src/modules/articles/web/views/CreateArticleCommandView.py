@@ -3,7 +3,8 @@ from dishka import FromDishka
 from dishka.integrations.fastapi import inject
 
 from core import get_current_user
-from ..schemas import AuthenticatedUser, ArticleResponse
+from ..schemas import ArticleResponse
+from core import AuthenticatedUser
 from modules.articles.handlers.commands.core import ICreateArticleHandler
 from modules.articles.models.commands import CreateArticleCommand
 

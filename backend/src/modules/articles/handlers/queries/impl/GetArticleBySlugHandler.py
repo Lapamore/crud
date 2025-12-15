@@ -10,7 +10,7 @@ class GetArticleBySlugHandler:
     def __init__(self, repository: IArticleReadRepository):
         self._repository = repository
 
-    async def handle(self, query: GetArticleBySlugQuery) -> ArticleDTO:
+    async def __call__(self, query: GetArticleBySlugQuery) -> ArticleDTO:
         article = await self._repository.find_by_slug(query.slug)
         
         if article is None:

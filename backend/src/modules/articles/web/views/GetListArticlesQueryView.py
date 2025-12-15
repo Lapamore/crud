@@ -4,8 +4,8 @@ from fastapi import Depends
 from dishka import FromDishka
 from dishka.integrations.fastapi import inject
 
-from core import get_current_user
-from ..schemas import AuthenticatedUser, ArticleResponse
+from core import get_current_user, AuthenticatedUser
+from ..schemas import ArticleResponse
 from modules.articles.handlers.queries.core import IGetListArticlesHandler
 from modules.articles.models.queries import ListArticlesQuery
 
