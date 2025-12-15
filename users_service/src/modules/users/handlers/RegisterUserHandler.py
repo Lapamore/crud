@@ -1,7 +1,7 @@
 from ..commands import RegisterUserCommand
 from ..repositories.core import IUserWriteRepository
 from ..exceptions import EmailAlreadyExistsException, UsernameAlreadyExistsException
-from src.core.auth import get_password_hash
+from core.auth import get_password_hash
 
 
 class RegisterUserHandler:
