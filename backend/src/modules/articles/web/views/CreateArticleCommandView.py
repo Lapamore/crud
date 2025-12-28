@@ -23,10 +23,9 @@ class CreateArticleCommandView:
             title=request.title,
             description=request.description,
             body=request.body,
-            author_id=current_user.id,
             tag_list=request.tag_list,
         )
 
-        article = await command_handler(command=command)
+        article = await command_handler(command=command, user_id=current_user.id)
 
         return article

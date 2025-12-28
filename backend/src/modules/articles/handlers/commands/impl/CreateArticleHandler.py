@@ -19,7 +19,7 @@ class CreateArticleHandler(ICreateArticleHandler):
         self._read_repository = read_repository
         self._write_repository = write_repository
 
-    async def __call__(self, command: CreateArticleCommand) -> ArticleResponse:
+    async def __call__(self, command: CreateArticleCommand, user_id: int) -> ArticleResponse:
         slug = slugify(command.title)
         
         if await self._read_repository.find_by_slug(slug):
@@ -30,7 +30,7 @@ class CreateArticleHandler(ICreateArticleHandler):
             description=command.description,
             body=command.body,
             slug=slug,
-            author_id=command.author_id,
+            author_id=user_id,
             tags=command.tag_list,
         )
         

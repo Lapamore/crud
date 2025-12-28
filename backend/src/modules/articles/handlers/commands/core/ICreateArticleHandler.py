@@ -8,5 +8,5 @@ __all__ = ["ICreateArticleHandler"]
 class ICreateArticleHandler(ABC):
     
     @abstractmethod
-    async def __call__(self, command: CreateArticleCommand):
+    async def __call__(self, command: CreateArticleCommand, user_id: int):
         raise NotImplementedError
