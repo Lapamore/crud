@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Type
+from typing import Any, Callable, Dict
 
 class IoCContainer:
     def __init__(self):

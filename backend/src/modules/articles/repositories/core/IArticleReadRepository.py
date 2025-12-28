@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
-from src.models.Article import Article
+from models import Article
 
 
 class IArticleReadRepository(ABC):

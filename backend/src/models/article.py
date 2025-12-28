@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
-from ..database import Base
+from database import Base
 
 
 class Article(Base):

@@ -1,7 +1,7 @@
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from src.models.Article import Article
+from models import Article
 from ..core.IArticleWriteRepository import IArticleWriteRepository
 
 

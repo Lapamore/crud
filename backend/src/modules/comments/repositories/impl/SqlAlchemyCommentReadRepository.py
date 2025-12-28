@@ -1,8 +1,8 @@
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from src.models.Comment import Comment
-from src.models.Article import Article
+from models import Comment
+from models import Article
 from ..core.ICommentReadRepository import ICommentReadRepository
 
 
