@@ -30,11 +30,8 @@ class CreateCommentCommandView:
             author_id=current_user.id,
         )
         try:
-            comment_id = await command_handler(command)
+            comment = await command_handler(command)
         except ArticleNotFoundException:
             raise HTTPException(status_code=404, detail="Article not found")
-        
-        query = GetCommentByIdQuery(comment_id=comment_id)
-        comment = await comment_query_handler(query)
         
         return comment

@@ -1,6 +1,7 @@
 from models import Comment
 from ..core import ICreateCommentHandler
 from ....models.commands import CreateCommentCommand
+from ....web.schemas import CommentResponse
 from modules.comments.repositories.core import ICommentWriteRepository
 from modules.articles.repositories.core import IArticleReadRepository
 from modules.articles.exceptions import ArticleNotFoundException
@@ -17,7 +18,7 @@ class CreateCommentHandler(ICreateCommentHandler):
         self._repository = repository
         self._article_repository = article_repository
 
-    async def __call__(self, command: CreateCommentCommand) -> int:
+    async def __call__(self, command: CreateCommentCommand) -> CommentResponse:
         article = await self._article_repository.find_by_slug(command.article_slug)
         if article is None:
             raise ArticleNotFoundException(command.article_slug)
@@ -28,4 +29,4 @@ class CreateCommentHandler(ICreateCommentHandler):
             author_id=command.author_id,
         )
         saved_comment = await self._repository.save(comment)
-        return saved_comment.id
+        return saved_comment

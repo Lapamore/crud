@@ -7,5 +7,5 @@ __all__ = ["IDeleteCommentHandler"]
 class IDeleteCommentHandler(ABC):
 
     @abstractmethod
-    async def handle(self, command: DeleteCommentCommand) -> None:
+    async def __call__(self, command: DeleteCommentCommand) -> None:
         raise NotImplementedError

@@ -1,4 +1,5 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException
+from fastapi.responses import Response
 from dishka import FromDishka
 from dishka.integrations.fastapi import inject
 
@@ -28,4 +29,4 @@ class DeleteArticleCommandView:
         except NotAuthorizedToModifyArticleException:
             raise HTTPException(status_code=403, detail="Not authorized to delete this article")
         
-        return
+        return Response(status_code=204)

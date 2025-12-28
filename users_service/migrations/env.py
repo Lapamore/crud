@@ -12,7 +12,7 @@ from alembic import context
 sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '../src')))
 
 from database import Base
-from models.User import User
+from models.user import User
 from config import settings
 
 # this is the Alembic Config object, which provides

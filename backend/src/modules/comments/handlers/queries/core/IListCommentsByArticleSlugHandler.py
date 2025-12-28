@@ -9,5 +9,5 @@ __all__ = ["IListCommentsByArticleSlugHandler"]
 
 class IListCommentsByArticleSlugHandler(ABC):
     @abstractmethod
-    async def handle(self, query: ListCommentsByArticleSlugQuery) -> List[CommentDTO]:
+    async def __call__(self, query: ListCommentsByArticleSlugQuery) -> List[CommentDTO]:
         raise NotImplementedError

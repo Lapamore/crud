@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException
 from dishka import FromDishka
 from dishka.integrations.fastapi import inject
+from fastapi.responses import Response
 
 from core import get_current_user, AuthenticatedUser
 from modules.comments.handlers.commands.core import IDeleteCommentHandler
@@ -36,4 +37,4 @@ class DeleteCommentCommandView:
         except NotAuthorizedToDeleteCommentException:
             raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
         
-        return
+        return Response(status_code=204)

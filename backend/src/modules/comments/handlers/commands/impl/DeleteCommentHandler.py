@@ -25,7 +25,7 @@ class DeleteCommentHandler(IDeleteCommentHandler):
         if article is None:
             raise ArticleNotFoundException(command.slug)
 
-        comment = await self._repository.find_by_id(command.comment_id)
+        comment = await self._article_repository.find_by_slug(command.slug)
         
         if comment is None:
             raise CommentNotFoundException(command.comment_id)

@@ -8,5 +8,5 @@ __all__ = ["IGetCommentByIdHandler"]
 
 class IGetCommentByIdHandler(ABC):
     @abstractmethod
-    async def handle(self, query: GetCommentByIdQuery) -> CommentDTO:
+    async def __call__(self, query: GetCommentByIdQuery) -> CommentDTO:
         raise NotImplementedError

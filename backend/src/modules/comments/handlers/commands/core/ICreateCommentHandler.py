@@ -6,5 +6,5 @@ __all__ = ["ICreateCommentHandler"]
 
 class ICreateCommentHandler(ABC):
     @abstractmethod
-    async def handle(self, command: CreateCommentCommand) -> int:
+    async def __call__(self, command: CreateCommentCommand) -> int:
         raise NotImplementedError

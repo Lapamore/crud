@@ -1,7 +1,9 @@
-from .CommentBase import CommentBase
+from pydantic import BaseModel, ConfigDict
 
 __all__ = ["CommentCreate"]
 
 
-class CommentCreate(CommentBase):
-    pass
+class CommentCreate(BaseModel):
+    model_config = ConfigDict(from_atributes=True)
+
+    body: str

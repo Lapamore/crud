@@ -1,12 +1,12 @@
-from .CommentBase import CommentBase
+from pydantic import BaseModel, ConfigDict
 
 __all__ = ["CommentResponse"]
 
 
-class CommentResponse(CommentBase):
+class CommentResponse(BaseModel):
     id: int
+    body: str
     article_id: int
     author_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_atributes=True)

@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class ArticleDTO(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(from_attributes=True, frozen=True)
 
     id: int
     slug: str
