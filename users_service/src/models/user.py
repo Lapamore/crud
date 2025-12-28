@@ -1,6 +1,8 @@
 import sqlalchemy as sa
 from database import Base
 
+__all__ = ["User"]
+
 
 class User(Base):
     __tablename__ = "users"

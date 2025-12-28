@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import schemas
-from src.core.tasker.core import ITaskProducer
-from src.core.deps import get_db, get_current_user, get_task_producer
-from src.core.schemas.AuthenticatedUser import AuthenticatedUser    
+from core.tasker.core import ITaskProducer
+from core.deps import get_db, get_current_user, get_task_producer
+from core.schemas.AuthenticatedUser import AuthenticatedUser    
 from ..commands import CreateArticleCommand, UpdateArticleCommand, DeleteArticleCommand
 from ..queries import GetArticleBySlugQuery, ListArticlesQuery
 from ..handlers import (

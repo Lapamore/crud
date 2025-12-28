@@ -1,6 +1,2 @@
-from .User import User
-from .Subscriber import Subscriber
-from database import Base
-
-__all__ = ["User", "Subscriber", "Base"]
-
+from .user import User
+from .subscriber import Subscriber

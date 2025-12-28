@@ -5,9 +5,10 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..config import settings
-from ..database import AsyncSessionLocal
+from config import settings
+from database import AsyncSessionLocal
 from .auth import ALGORITHM
+from modules.users.repositories.impl import SqlAlchemyUserReadRepository
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
 
@@ -40,7 +41,6 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
 ):
     """Returns full User model from database."""
-    from ..modules.users.repositories.impl import SqlAlchemyUserReadRepository
     
     repository = SqlAlchemyUserReadRepository(db)
     user = await repository.find_by_id(user_id)

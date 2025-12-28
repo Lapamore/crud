@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
-from src.models.Comment import Comment
+from models import Comment
 
 
 class ICommentReadRepository(ABC):

@@ -1,4 +1,4 @@
-from src.models.Comment import Comment
+from models import Comment
 from ..commands.CreateCommentCommand import CreateCommentCommand
 from ..repositories.core.ICommentWriteRepository import ICommentWriteRepository
 

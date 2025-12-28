@@ -4,7 +4,7 @@ from typing import Tuple
 from ..commands import LoginCommand
 from ..repositories.core import IUserReadRepository
 from ..exceptions import InvalidCredentialsException
-from src.core.auth import verify_password, create_access_token
+from core.auth import verify_password, create_access_token
 
 
 class LoginHandler:

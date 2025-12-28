@@ -65,8 +65,6 @@ services:
       - ./users_service/migrations:/app/migrations
     env_file:
       - ./users_service/.env
-    environment:
-      - ROOT_PATH=/users
     depends_on:
       db-users:
         condition: service_healthy

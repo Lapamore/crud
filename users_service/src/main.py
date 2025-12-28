@@ -4,13 +4,13 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
 
-from .modules.users.api import router as users_router
+from modules.users.api import router as users_router
 
 app = FastAPI(
     title="Users API",
     description="Microservice for user management and authentication.",
     version="1.0.0",
-    root_path=os.getenv("ROOT_PATH", "")
+    openapi_url="/api/users/openapi.json"
 )
 
 

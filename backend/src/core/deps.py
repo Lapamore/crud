@@ -6,12 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends, HTTPException, status
 
-from ..config import settings
-from ..database import AsyncSessionLocal
+from config import settings
+from database import AsyncSessionLocal
 
-from src.core.tasker.impl.CeleryTaskProducer import CeleryTaskProducer
-from src.core.tasker.core.ITaskProducer import ITaskProducer
-from src.core.schemas.AuthenticatedUser import AuthenticatedUser
+from core.tasker.impl.CeleryTaskProducer import CeleryTaskProducer
+from core.tasker.core.ITaskProducer import ITaskProducer
+from core.schemas.AuthenticatedUser import AuthenticatedUser
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")

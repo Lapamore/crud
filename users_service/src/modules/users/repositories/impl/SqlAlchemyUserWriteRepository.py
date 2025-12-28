@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 
 from ..core import IUserWriteRepository
 from ...dto import UserDTO
-from src.models import User
+from models import User
 
 
 class SqlAlchemyUserWriteRepository(IUserWriteRepository):

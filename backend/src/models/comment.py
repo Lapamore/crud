@@ -2,9 +2,12 @@ import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 from database import Base
 
+__all__ = ["Comment"]
+
 
 class Comment(Base):
     __tablename__ = "comments"
+    __table_args__ = {'extend_existing': True}
     
     id = sa.Column(sa.Integer, primary_key=True, index=True)
     body = sa.Column(sa.String, nullable=False)

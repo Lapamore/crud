@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import schemas
-from src.core import get_db, get_current_user
+from core import get_db, get_current_user
 from ..commands import RegisterUserCommand, UpdateUserCommand, LoginCommand, UpdateSubscriptionKeyCommand, SubscribeCommand
 from ..queries import GetUserByIdQuery
 from ..handlers import (

@@ -2,9 +2,12 @@ import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 from database import Base
 
+__all__ = ["Article"]
+
 
 class Article(Base):
     __tablename__ = "articles"
+    __table_args__ = {'extend_existing': True}
 
     id = sa.Column(sa.Integer, primary_key=True, index=True)
     slug = sa.Column(sa.String, unique=True, index=True, nullable=False)

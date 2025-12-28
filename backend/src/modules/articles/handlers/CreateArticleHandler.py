@@ -1,7 +1,7 @@
 from slugify import slugify
 
-from ....models import Article
-from ....core.tasker.core import ITaskProducer
+from models import Article
+from core.tasker.core import ITaskProducer
 from ..commands.CreateArticleCommand import CreateArticleCommand
 from ..repositories.core.IArticleWriteRepository import IArticleWriteRepository
 from ..exceptions.SlugAlreadyExistsException import SlugAlreadyExistsException
