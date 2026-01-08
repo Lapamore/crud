@@ -32,7 +32,7 @@ class PublishArticleHandler:
         
         self._task_producer.send_task(
             "post.moderate",
-            {
+            kwargs={
                 "post_id": article.id,
                 "author_id": article.author_id,
                 "title": article.title,

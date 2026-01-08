@@ -9,7 +9,7 @@ echo "=== Lab 4: SAGA Choreography Quick Setup ==="
 # Step 1: Start services
 echo ""
 echo "Step 1: Starting all services..."
-docker-compose up -d --build
+docker-compose up -d
 
 echo ""
 echo "Waiting for services to start (30 seconds)..."
