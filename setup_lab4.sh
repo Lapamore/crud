@@ -18,8 +18,8 @@ sleep 30
 # Step 2: Run migrations
 echo ""
 echo "Step 2: Running migrations..."
-docker exec backend alembic upgrade head
-docker exec users-api alembic upgrade head
+docker exec -w /app backend alembic upgrade head
+docker exec -w /app users-api alembic upgrade head
 
 # Step 3: Initialize API keys
 echo ""
