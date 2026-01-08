@@ -3,8 +3,6 @@ from sqlalchemy.orm import relationship
 from database import Base
 from core.enums import ArticleStatus
 
-__all__ = ["Article"]
-
 
 class Article(Base):
     __tablename__ = "articles"
