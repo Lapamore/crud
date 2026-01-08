@@ -1,6 +1,3 @@
-"""
-Preview Worker - генерация превью постов.
-"""
 import logging
 import hashlib
 import requests
@@ -19,12 +16,6 @@ logger = logging.getLogger(__name__)
     retry_backoff=True
 )
 def generate_preview(self, data: dict):
-    """
-    Генерация превью для поста.
-    Создаёт фейковый URL превью (заглушка).
-    
-    При успехе: обновляет preview_url и ставит задачу post.publish
-    """
     post_id = data.get("post_id")
     author_id = data.get("author_id")
     title = data.get("title")

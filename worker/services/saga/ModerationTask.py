@@ -1,6 +1,3 @@
-"""
-Moderation Worker - модерация постов.
-"""
 import logging
 import random
 import requests
@@ -18,14 +15,11 @@ logger = logging.getLogger(__name__)
     autoretry_for=(requests.RequestException,),
     retry_backoff=True
 )
-def moderate_post(self, post_id: int, author_id: int, title: str, body: str, requested_by: int):
-    """
-    Модерация поста.
-    Симулирует AI-модерацию (random approve/reject).
-    
-    При успехе: ставит задачу post.generate_preview
-    При отклонении: вызывает /posts/{id}/reject
-    """
+def moderate_post(self, data: dict):
+    post_id = data.get("post_id")
+    author_id = data.get("author_id")
+    title = data.get("title")
+    body = data.get("body")
     
     logger.info(f"[MODERATE] Starting moderation for post_id={post_id}")
     

@@ -1,6 +1,3 @@
-"""
-Общие утилиты и конфигурация для SAGA воркеров.
-"""
 import logging
 from config import config
 from infrastructure.core.ioc.container import container
@@ -20,7 +17,6 @@ DLQ_QUEUE = "dlq"
 
 
 def get_internal_headers():
-    """Получить заголовки для внутренних запросов."""
     return {
         "X-API-Key": INTERNAL_API_KEY,
         "Content-Type": "application/json"
@@ -28,7 +24,6 @@ def get_internal_headers():
 
 
 def send_to_dlq(task_name: str, task_data: dict, error: str):
-    """Отправить задачу в DLQ."""
     celery.send_task(
         "dlq.process",
         args=[{

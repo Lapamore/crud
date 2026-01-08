@@ -1,6 +1,3 @@
-"""
-Publish Worker - публикация постов.
-"""
 import logging
 import requests
 
@@ -18,10 +15,6 @@ logger = logging.getLogger(__name__)
     retry_backoff=True
 )
 def publish_post(self, data: dict):
-    """
-    Публикация поста.
-    Переводит статус в PUBLISHED и ставит задачу на уведомления.
-    """
     post_id = data.get("post_id")
     author_id = data.get("author_id")
     title = data.get("title")

@@ -17,6 +17,5 @@ class Article(Base):
     comments = relationship("Comment", back_populates="article", cascade="all, delete-orphan")
     tags = sa.Column("tagList", sa.ARRAY(sa.String), nullable=True)
     
-    # SAGA fields
     status = sa.Column(sa.String(20), default=ArticleStatus.DRAFT.value, nullable=False)
     preview_url = sa.Column(sa.String, nullable=True)

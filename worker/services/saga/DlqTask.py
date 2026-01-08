@@ -1,6 +1,3 @@
-"""
-DLQ Consumer - обработка неудачных задач и компенсации.
-"""
 import logging
 import requests
 

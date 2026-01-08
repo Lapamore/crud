@@ -1,6 +1,3 @@
-"""
-Notification Worker - уведомление подписчиков.
-"""
 import logging
 import asyncio
 import requests
@@ -15,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 async def get_subscribers(author_id: int):
-    """Получить подписчиков автора из БД users."""
     local_engine = create_async_engine(USERS_DATABASE_URL, echo=False)
     LocalSession = sessionmaker(local_engine, class_=AsyncSession, expire_on_commit=False)
     
@@ -41,10 +37,6 @@ async def get_subscribers(author_id: int):
     retry_backoff=True
 )
 def notify_subscribers(self, data: dict):
-    """
-    Уведомление подписчиков о новом посте.
-    Использует push-notificator из ЛР №3.
-    """
     post_id = data.get("post_id")
     author_id = data.get("author_id")
     title = data.get("title")
@@ -97,7 +89,6 @@ def notify_subscribers(self, data: dict):
 
 @celery.task(name="notify_followers", bind=True, max_retries=5)
 def notify_followers(self, author_id: int, post_id: int, post_title: str):
-    """Legacy task для обратной совместимости с ЛР №3."""
     logger.info(f"[LEGACY] Processing notification for author_id={author_id}, post_id={post_id}")
     
     try:
