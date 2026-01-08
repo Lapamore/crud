@@ -6,6 +6,7 @@ import os
 
 from modules.articles.api import router as articles_router
 from modules.comments.api import router as comments_router
+from modules.internal import api_keys_router, internal_articles_router
 
 app = FastAPI(
     title="Blog Platform API",
@@ -38,3 +39,5 @@ def read_root():
 
 app.include_router(articles_router, prefix="/api", tags=["Articles"])
 app.include_router(comments_router, prefix="/api", tags=["Comments"])
+app.include_router(api_keys_router, prefix="/api/internal", tags=["Internal - API Keys"])
+app.include_router(internal_articles_router, prefix="/api/internal", tags=["Internal - Articles"])

@@ -6,7 +6,7 @@ from . import schemas
 from core.tasker.core import ITaskProducer
 from core.deps import get_db, get_current_user, get_task_producer
 from core.schemas.AuthenticatedUser import AuthenticatedUser    
-from ..commands import CreateArticleCommand, UpdateArticleCommand, DeleteArticleCommand
+from ..commands import CreateArticleCommand, UpdateArticleCommand, DeleteArticleCommand, PublishArticleCommand
 from ..queries import GetArticleBySlugQuery, ListArticlesQuery
 from ..handlers import (
     CreateArticleHandler,
@@ -14,6 +14,8 @@ from ..handlers import (
     DeleteArticleHandler,
     GetArticleBySlugHandler,
     ListArticlesHandler,
+    PublishArticleHandler,
+    ArticleNotInDraftException,
 )
 from ..repositories.impl import SqlAlchemyArticleWriteRepository, SqlAlchemyArticleReadRepository
 from ..exceptions import (
@@ -76,6 +78,8 @@ async def list_articles(
             "body": a.body,
             "author_id": a.author_id,
             "tagList": a.tag_list,
+            "status": a.status,
+            "preview_url": a.preview_url,
         }
         for a in articles
     ]
@@ -101,6 +105,8 @@ async def get_article(slug: str, db: AsyncSession = Depends(get_db)):
         "body": article.body,
         "author_id": article.author_id,
         "tagList": article.tag_list,
+        "status": article.status,
+        "preview_url": article.preview_url,
     }
 
 
@@ -156,3 +162,36 @@ async def delete_article(
         raise HTTPException(status_code=403, detail="Not authorized to delete this article")
     
     return
+
+
+@router.post("/articles/{article_id}/publish", status_code=status.HTTP_202_ACCEPTED)
+async def publish_article(
+    article_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    task_producer: ITaskProducer = Depends(get_task_producer)
+):
+    """
+    Запустить процесс публикации статьи (начало SAGA).
+    Доступен только автору статьи и только для статей в статусе DRAFT.
+    
+    После вызова статья переходит в статус PENDING_PUBLISH и отправляется на модерацию.
+    """
+    repository = SqlAlchemyArticleWriteRepository(db)
+    handler = PublishArticleHandler(repository, task_producer)
+    
+    command = PublishArticleCommand(
+        article_id=article_id,
+        user_id=current_user.id
+    )
+    
+    try:
+        result = await handler.handle(command)
+    except ArticleNotFoundException:
+        raise HTTPException(status_code=404, detail="Article not found")
+    except NotAuthorizedToModifyArticleException:
+        raise HTTPException(status_code=403, detail="Not authorized to publish this article")
+    except ArticleNotInDraftException:
+        raise HTTPException(status_code=400, detail="Article must be in DRAFT status to publish")
+    
+    return result

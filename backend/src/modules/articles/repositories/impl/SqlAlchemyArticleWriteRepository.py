@@ -20,6 +20,11 @@ class SqlAlchemyArticleWriteRepository(IArticleWriteRepository):
         result = await self._db.execute(query)
         return result.scalar_one_or_none()
 
+    async def find_by_id(self, article_id: int) -> Optional[Article]:
+        query = select(Article).where(Article.id == article_id)
+        result = await self._db.execute(query)
+        return result.scalar_one_or_none()
+
     async def update(self, article: Article) -> Article:
         self._db.add(article)
         await self._db.commit()

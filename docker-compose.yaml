@@ -55,6 +55,8 @@ services:
         condition: service_started
     networks:
       - internal
+    ports:
+      - "8001:8000"
 
   users-api:
     build: ./users_service
@@ -111,6 +113,23 @@ services:
       - redis
       - push-notificator
       - db-users
+      - db-main
+      - backend
+    networks:
+      - internal
+
+  # DLQ Worker - обработка неудачных задач
+  dlq-worker:
+    volumes:
+      - ./worker:/app
+    build: ./worker
+    container_name: dlq-worker
+    env_file:
+      - ./worker/.env
+    command: ["celery", "-A", "services.RunTasks", "worker", "--loglevel=info", "-Q", "dlq"]
+    depends_on:
+      - redis
+      - backend
       - db-main
     networks:
       - internal

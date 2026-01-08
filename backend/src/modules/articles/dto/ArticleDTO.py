@@ -14,3 +14,5 @@ class ArticleDTO(BaseModel):
     body: str
     author_id: int
     tag_list: Optional[List[str]] = None
+    status: str = "DRAFT"
+    preview_url: Optional[str] = None

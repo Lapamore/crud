@@ -13,6 +13,10 @@ class IArticleWriteRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def find_by_id(self, article_id: int) -> Optional[Article]:
+        raise NotImplementedError
+
+    @abstractmethod
     async def update(self, article: Article) -> Article:
         raise NotImplementedError
 
