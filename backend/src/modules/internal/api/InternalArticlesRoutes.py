@@ -21,10 +21,6 @@ async def get_post_internal(
     db: AsyncSession = Depends(get_db),
     _: bool = Depends(verify_internal_api_key)
 ):
-    """
-    Получение поста по ID (внутренний эндпоинт).
-    Доступен только с валидным внутренним API-ключом.
-    """
     query = select(Article).where(Article.id == post_id)
     result = await db.execute(query)
     article = result.scalar_one_or_none()
@@ -53,9 +49,7 @@ async def reject_post(
     _: bool = Depends(verify_internal_api_key)
 ):
     """
-    Отклонение поста модерацией (внутренний эндпоинт).
-    Переводит статус из PENDING_PUBLISH в REJECTED.
-    Идемпотентная операция.
+    Отклонение поста модерацией из PENDING_PUBLISH в REJECTED
     """
     query = select(Article).where(Article.id == post_id)
     result = await db.execute(query)
@@ -64,11 +58,9 @@ async def reject_post(
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     
-    # Идемпотентность: если уже REJECTED, просто возвращаем успех
     if article.status == ArticleStatus.REJECTED.value:
         return {"message": "Article already rejected", "status": article.status}
     
-    # Проверяем, что пост в состоянии PENDING_PUBLISH
     if article.status not in [ArticleStatus.PENDING_PUBLISH.value, ArticleStatus.ERROR.value]:
         raise HTTPException(
             status_code=400,
@@ -88,10 +80,6 @@ async def update_preview(
     db: AsyncSession = Depends(get_db),
     _: bool = Depends(verify_internal_api_key)
 ):
-    """
-    Обновление preview_url поста (внутренний эндпоинт).
-    Вызывается Preview Worker после генерации превью.
-    """
     query = select(Article).where(Article.id == post_id)
     result = await db.execute(query)
     article = result.scalar_one_or_none()
@@ -112,9 +100,7 @@ async def publish_post_internal(
     _: bool = Depends(verify_internal_api_key)
 ):
     """
-    Публикация поста (внутренний эндпоинт).
-    Переводит статус из PENDING_PUBLISH в PUBLISHED.
-    Идемпотентная операция.
+    Публикация поста. Переводит статус из PENDING_PUBLISH в PUBLISHED
     """
     query = select(Article).where(Article.id == post_id)
     result = await db.execute(query)
@@ -123,11 +109,9 @@ async def publish_post_internal(
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     
-    # Идемпотентность: если уже PUBLISHED, просто возвращаем успех
     if article.status == ArticleStatus.PUBLISHED.value:
         return {"message": "Article already published", "status": article.status}
     
-    # Проверяем, что пост в состоянии PENDING_PUBLISH
     if article.status != ArticleStatus.PENDING_PUBLISH.value:
         raise HTTPException(
             status_code=400,
@@ -152,11 +136,6 @@ async def set_post_error(
     db: AsyncSession = Depends(get_db),
     _: bool = Depends(verify_internal_api_key)
 ):
-    """
-    Установка статуса ERROR для поста (внутренний эндпоинт).
-    Используется для компенсации при технических ошибках.
-    Идемпотентная операция.
-    """
     query = select(Article).where(Article.id == post_id)
     result = await db.execute(query)
     article = result.scalar_one_or_none()
@@ -164,11 +143,9 @@ async def set_post_error(
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     
-    # Идемпотентность: если уже ERROR, просто возвращаем успех
     if article.status == ArticleStatus.ERROR.value:
         return {"message": "Article already in error state", "status": article.status}
     
-    # Можем установить ERROR из любого состояния кроме PUBLISHED
     if article.status == ArticleStatus.PUBLISHED.value:
         raise HTTPException(
             status_code=400,
@@ -187,10 +164,6 @@ async def reset_to_draft(
     db: AsyncSession = Depends(get_db),
     _: bool = Depends(verify_internal_api_key)
 ):
-    """
-    Сброс статуса поста в DRAFT (внутренний эндпоинт).
-    Используется для компенсации при ошибках.
-    """
     query = select(Article).where(Article.id == post_id)
     result = await db.execute(query)
     article = result.scalar_one_or_none()
@@ -198,7 +171,6 @@ async def reset_to_draft(
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     
-    # Нельзя сбросить уже опубликованный пост
     if article.status == ArticleStatus.PUBLISHED.value:
         raise HTTPException(
             status_code=400,
