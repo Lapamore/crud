@@ -14,11 +14,6 @@ router = APIRouter()
 async def initialize_internal_api_keys(
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Инициализация внутренних API-ключей для воркеров.
-    Вызывается один раз при первоначальной настройке системы.
-    """
-    # Проверяем, есть ли уже ключи
     query = select(ApiKey).where(ApiKey.is_active == True)
     result = await db.execute(query)
     existing_keys = result.scalars().all()
@@ -37,7 +32,6 @@ async def initialize_internal_api_keys(
             ]
         )
     
-    # Создаём ключи для воркеров
     worker_names = [
         "moderation-worker",
         "preview-worker",
@@ -48,7 +42,7 @@ async def initialize_internal_api_keys(
     
     created_keys = []
     for worker_name in worker_names:
-        key = secrets.token_urlsafe(48)  # 64 символа base64
+        key = secrets.token_urlsafe(48)
         api_key = ApiKey(
             key=key,
             description=f"Internal API key for {worker_name}",
@@ -81,7 +75,6 @@ async def create_api_key(
     key_data: ApiKeyCreate,
     db: AsyncSession = Depends(get_db)
 ):
-    """Создать новый API-ключ."""
     key = secrets.token_urlsafe(48)
     api_key = ApiKey(
         key=key,
