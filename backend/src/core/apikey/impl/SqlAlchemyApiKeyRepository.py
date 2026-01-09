@@ -7,13 +7,11 @@ from ..core.IApiKeyRepository import IApiKeyRepository
 
 
 class SqlAlchemyApiKeyRepository(IApiKeyRepository):
-    """Реализация репозитория API-ключей на SQLAlchemy."""
     
     def __init__(self, db: AsyncSession):
         self._db = db
 
     async def find_by_key(self, key: str) -> Optional[ApiKey]:
-        """Найти API-ключ по значению ключа."""
         query = select(ApiKey).where(
             ApiKey.key == key,
             ApiKey.is_active == True
@@ -27,7 +25,6 @@ class SqlAlchemyApiKeyRepository(IApiKeyRepository):
         return api_key
 
     async def create(self, key: str, description: str, expires_at: Optional[datetime] = None) -> ApiKey:
-        """Создать новый API-ключ."""
         api_key = ApiKey(
             key=key,
             description=description,
@@ -40,7 +37,6 @@ class SqlAlchemyApiKeyRepository(IApiKeyRepository):
         return api_key
 
     async def deactivate(self, key_id: int) -> None:
-        """Деактивировать API-ключ."""
         query = select(ApiKey).where(ApiKey.id == key_id)
         result = await self._db.execute(query)
         api_key = result.scalar_one_or_none()
