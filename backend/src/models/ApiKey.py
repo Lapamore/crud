@@ -6,9 +6,6 @@ __all__ = ["ApiKey"]
 
 
 class ApiKey(Base):
-    """
-    Модель для хранения внутренних API-ключей для service-to-service коммуникаций.
-    """
     __tablename__ = "api_keys"
     __table_args__ = {'extend_existing': True}
 
