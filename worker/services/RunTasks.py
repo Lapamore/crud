@@ -1,11 +1,7 @@
-"""
-Точка входа для Celery воркеров.
-"""
 from infrastructure.core.ioc.container import container
 
 celery = container.resolve("celery")
 
-# Импортируем SAGA задачи для регистрации
 from services.saga import (
     moderate_post,
     generate_preview,
